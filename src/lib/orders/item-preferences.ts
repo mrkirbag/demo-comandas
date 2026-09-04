@@ -1,65 +1,91 @@
-/** Preferencias de preparación en ítems de comanda (hamburguesas, etc.). */
+import {
+  orderModifierGroups,
+  type OrderModifierGroup,
+} from '@/data/order-modifiers';
 
-export const DEFAULT_ITEM_PREFERENCE = 'Con todo';
+export type { OrderModifierGroup, OrderModifierMode } from '@/data/order-modifiers';
+export { orderModifierGroups } from '@/data/order-modifiers';
 
-export const DEFAULT_ITEM_CUT_STYLE = 'Enteras';
+export function modifierGroupAppliesToCategory(
+  group: OrderModifierGroup,
+  category: string,
+): boolean {
+  if (!group.enabled || group.options.length === 0) {
+    return false;
+  }
 
-export const ITEM_CUT_STYLES = ['Enteras', 'Picadas'] as const;
+  if (group.excludeCategories.includes(category)) {
+    return false;
+  }
 
-export type ItemCutStyle = (typeof ITEM_CUT_STYLES)[number];
+  if (group.categories.length > 0) {
+    return group.categories.includes(category);
+  }
 
-export const ITEM_NOTE_OPTIONS = [
-  DEFAULT_ITEM_PREFERENCE,
-  'Sin pan',
-  'Sin salchicha',
-  'Sin vegetales',
-  'Sin cebolla',
-  'Sin lechuga',
-  'Sin tomate',
-  'Sin pepinillos',
-  'Sin salsa',
-  'Sin queso',
-  'Sin tocineta',
-] as const;
-
-export function productUsesPreferences(category: string): boolean {
-  return category !== 'bebidas';
+  return true;
 }
 
-export function productUsesCutStyle(category: string): boolean {
-  return productUsesPreferences(category);
+export function getApplicableModifierGroups(category: string): OrderModifierGroup[] {
+  return orderModifierGroups.filter((group) => modifierGroupAppliesToCategory(group, category));
 }
 
-export function isItemCutStyle(value: string): value is ItemCutStyle {
-  return ITEM_CUT_STYLES.includes(value as ItemCutStyle);
+export function categoryUsesModifiers(category: string): boolean {
+  return getApplicableModifierGroups(category).length > 0;
 }
 
-export function buildItemNotes(cutStyle: ItemCutStyle, noteOptions: string[]): string {
-  const preferences = noteOptions.map((option) => option.trim()).filter(Boolean);
-  return [cutStyle, ...preferences].join(', ');
+export function getDefaultSelections(category: string): Record<string, string[]> {
+  const selections: Record<string, string[]> = {};
+
+  for (const group of getApplicableModifierGroups(category)) {
+    selections[group.id] = [group.defaultOption];
+  }
+
+  return selections;
 }
 
-/** Texto de preferencias para tickets/comanda. Bebidas no llevan. Incluye enteras/picadas. */
+export function toggleMultipleModifierOption(
+  current: string[],
+  option: string,
+  defaultOption: string,
+): string[] {
+  if (option === defaultOption) {
+    return [defaultOption];
+  }
+
+  const withoutDefault = current.filter((value) => value !== defaultOption);
+  const isSelected = withoutDefault.includes(option);
+  const next = isSelected
+    ? withoutDefault.filter((value) => value !== option)
+    : [...withoutDefault, option];
+
+  return next.length === 0 ? [defaultOption] : next;
+}
+
+export function buildItemNotes(
+  category: string,
+  selections: Record<string, string[]>,
+): string | undefined {
+  const groups = getApplicableModifierGroups(category);
+  if (groups.length === 0) {
+    return undefined;
+  }
+
+  const parts = groups.flatMap((group) =>
+    (selections[group.id] ?? []).map((option) => option.trim()).filter(Boolean),
+  );
+
+  return parts.length > 0 ? parts.join(', ') : undefined;
+}
+
+/** Texto de modificadores para tickets y cocina. Sin notas o categoría sin grupos → no se muestra. */
 export function getItemPreferenceLabel(item: {
   notes?: string | null;
   product_category?: string | null;
 }): string | null {
-  if (item.product_category && !productUsesPreferences(item.product_category)) {
+  if (item.product_category && !categoryUsesModifiers(item.product_category)) {
     return null;
   }
 
-  const parts = item.notes
-    ?.split(',')
-    .map((part) => part.trim())
-    .filter(Boolean) ?? [];
-
-  if (parts.length === 0) {
-    return `${DEFAULT_ITEM_CUT_STYLE}, ${DEFAULT_ITEM_PREFERENCE}`;
-  }
-
-  if (!parts.some((part) => isItemCutStyle(part))) {
-    return [DEFAULT_ITEM_CUT_STYLE, ...parts].join(', ');
-  }
-
-  return parts.join(', ');
+  const notes = item.notes?.trim();
+  return notes ? notes : null;
 }

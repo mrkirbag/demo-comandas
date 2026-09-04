@@ -7,9 +7,11 @@ import {
   sumExtrasPrice,
 } from '@/lib/orders/item-extras';
 import {
-  ITEM_NOTE_OPTIONS,
   buildItemNotes,
+  categoryUsesModifiers,
+  getApplicableModifierGroups,
   getItemPreferenceLabel,
+  toggleMultipleModifierOption,
 } from '@/lib/orders/item-preferences';
 
 describe('item extras', () => {
@@ -31,22 +33,45 @@ describe('item extras', () => {
 });
 
 describe('item preferences', () => {
-  it('incluye sin pan y sin salchicha', () => {
-    expect(ITEM_NOTE_OPTIONS).toContain('Sin pan');
-    expect(ITEM_NOTE_OPTIONS).toContain('Sin salchicha');
+  it('no aplica corte ni preferencias a bebidas ni adicionales', () => {
+    expect(getApplicableModifierGroups('bebidas')).toEqual([]);
+    expect(getApplicableModifierGroups('adicionales')).toEqual([]);
+    expect(categoryUsesModifiers('hamburguesas')).toBe(true);
   });
 
-  it('arma notas con corte obligatorio y por defecto enteras', () => {
-    expect(buildItemNotes('Enteras', ['Con todo'])).toBe('Enteras, Con todo');
-    expect(buildItemNotes('Picadas', ['Sin pan'])).toBe('Picadas, Sin pan');
-    expect(getItemPreferenceLabel({ notes: null, product_category: 'clasicas' })).toBe(
-      'Enteras, Con todo',
+  it('el grupo de corte viene desactivado en el demo', () => {
+    expect(getApplicableModifierGroups('hamburguesas').some((group) => group.id === 'cut')).toBe(
+      false,
     );
-    expect(getItemPreferenceLabel({ notes: 'Sin queso', product_category: 'clasicas' })).toBe(
-      'Enteras, Sin queso',
-    );
-    expect(getItemPreferenceLabel({ notes: 'Picadas, Sin pan', product_category: 'bebidas' })).toBe(
-      null,
-    );
+  });
+
+  it('arma notas solo con los grupos activos', () => {
+    expect(buildItemNotes('hamburguesas', { preferences: ['Al gusto'] })).toBe('Al gusto');
+    expect(
+      buildItemNotes('hamburguesas', { preferences: ['Sin cebolla', 'Sin salsa'] }),
+    ).toBe('Sin cebolla, Sin salsa');
+    expect(buildItemNotes('bebidas', { preferences: ['Sin cebolla'] })).toBeUndefined();
+  });
+
+  it('en tickets muestra las notas guardadas, sin inventar valores', () => {
+    expect(getItemPreferenceLabel({ notes: null, product_category: 'hamburguesas' })).toBeNull();
+    expect(
+      getItemPreferenceLabel({ notes: 'Sin cebolla', product_category: 'hamburguesas' }),
+    ).toBe('Sin cebolla');
+    expect(
+      getItemPreferenceLabel({ notes: 'Picadas, Sin pan', product_category: 'bebidas' }),
+    ).toBeNull();
+  });
+
+  it('en múltiple, la opción por defecto limpia el resto', () => {
+    expect(toggleMultipleModifierOption(['Al gusto'], 'Sin cebolla', 'Al gusto')).toEqual([
+      'Sin cebolla',
+    ]);
+    expect(
+      toggleMultipleModifierOption(['Sin cebolla', 'Sin salsa'], 'Al gusto', 'Al gusto'),
+    ).toEqual(['Al gusto']);
+    expect(toggleMultipleModifierOption(['Sin cebolla'], 'Sin cebolla', 'Al gusto')).toEqual([
+      'Al gusto',
+    ]);
   });
 });

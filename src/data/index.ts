@@ -7,3 +7,5 @@ export type {
   BrandCurrency,
   BrandTicket,
 } from './brand';
+export { orderModifierGroups } from './order-modifiers';
+export type { OrderModifierGroup, OrderModifierMode } from './order-modifiers';

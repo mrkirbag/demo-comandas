@@ -1,5 +1,5 @@
 {
-  "name": "delicious-burger",
+  "name": "demo-comandas",
   "type": "module",
   "version": "0.0.1",
   "engines": {
@@ -11,6 +11,7 @@
     "preview": "astro preview",
     "astro": "astro",
     "db:seed": "tsx src/lib/db/seed.ts",
+    "db:seed-products": "tsx src/lib/db/seed-productos.ts",
     "db:migrate": "tsx src/lib/db/migrate.ts",
     "test": "vitest run",
     "test:watch": "vitest"

@@ -58,14 +58,15 @@ export type BrandConfig = {
 
 /**
  * Configuración white-label del cliente.
- * Para revender: cambia este archivo y el .env, sin tocar el diseño del sistema.
+ * Para revender: cambia este archivo, `src/data/product-categories.ts`,
+ * `src/data/order-modifiers.ts` y el .env, sin tocar el diseño del sistema.
  *
  * Assets en public/brand/ (logo.webp, favicon.webp, etc.)
  */
 export const brand = {
-  name: 'Delicious Burger',
-  shortName: 'DB',
-  tagline: 'Las mejores hamburguesas de la ciudad',
+  name: 'Demo Sistema Restaurantes',
+  shortName: 'FK',
+  tagline: 'Soluciones reales a ideas complejas',
   locale: 'es',
 
   currency: {
@@ -75,17 +76,17 @@ export const brand = {
   },
 
   assets: {
-    logo: '/brand/logo.webp',
-    logoMark: '/brand/favicon.webp',
-    favicon: '/brand/favicon.webp',
+    logo: '/brand/logo.png',
+    logoMark: '/brand/logo.png',
+    favicon: '/brand/logo.png',
   },
 
   colors: {
-    primary: '#E85D04',
-    primaryForeground: '#FFFFFF',
-    secondary: '#1A1A2E',
-    secondaryForeground: '#FFFFFF',
-    accent: '#FAA307',
+    primary: '#0F0529',
+    primaryForeground: '#dadada',
+    secondary: '#1F0A52',
+    secondaryForeground: '#dadada',
+    accent: '#9485ED',
     background: '#F8F9FA',
     surface: '#FFFFFF',
     text: '#1A1A2E',
@@ -97,9 +98,9 @@ export const brand = {
   },
 
   contact: {
-    phone: '+58 424-7580992',
-    instagram: '@delicious_burgers.sc',
-    address: 'La Concordia',
+    phone: '+58 424-7217176',
+    instagram: '@fadikirbagdev',
+    address: 'Barrio Obrero',
     city: 'San Cristóbal',
     country: 'Venezuela',
   },

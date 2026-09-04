@@ -34,15 +34,11 @@ import {
   productUsesAdicionales,
 } from '@/lib/orders/item-extras';
 import {
-  DEFAULT_ITEM_CUT_STYLE,
-  DEFAULT_ITEM_PREFERENCE,
-  ITEM_CUT_STYLES,
-  ITEM_NOTE_OPTIONS,
   buildItemNotes,
+  getApplicableModifierGroups,
+  getDefaultSelections,
   getItemPreferenceLabel,
-  productUsesCutStyle,
-  productUsesPreferences,
-  type ItemCutStyle,
+  toggleMultipleModifierOption,
 } from '@/lib/orders/item-preferences';
 import { formatCop } from '@/lib/utils/currency';
 import {
@@ -68,13 +64,10 @@ type OrderViewProps = {
 
 type CategoryFilter = string | 'all';
 
-const DEFAULT_ITEM_NOTE = DEFAULT_ITEM_PREFERENCE;
-
 type AddItemForm = {
   product: Product;
   quantity: string;
-  cutStyle: ItemCutStyle;
-  noteOptions: string[];
+  selections: Record<string, string[]>;
   adicionalIds: string[];
 };
 
@@ -84,18 +77,8 @@ function formatPrice(value: number): string {
   return formatCop(value);
 }
 
-function toggleItemNoteOption(current: string[], option: string): string[] {
-  if (option === DEFAULT_ITEM_NOTE) {
-    return [DEFAULT_ITEM_NOTE];
-  }
-
-  const withoutDefault = current.filter((value) => value !== DEFAULT_ITEM_NOTE);
-  const isSelected = withoutDefault.includes(option);
-  const next = isSelected
-    ? withoutDefault.filter((value) => value !== option)
-    : [...withoutDefault, option];
-
-  return next.length === 0 ? [DEFAULT_ITEM_NOTE] : next;
+function selectedModifierOptions(form: AddItemForm, groupId: string): string[] {
+  return form.selections[groupId] ?? [];
 }
 
 function selectedAdicionalesTotal(products: Product[], ids: string[]): number {
@@ -314,26 +297,21 @@ function OrderView({ orderId, canDeliver = false }: OrderViewProps) {
       return;
     }
 
-    const showNoteOptions = productUsesPreferences(addForm.product.category);
-    const showCutStyle = productUsesCutStyle(addForm.product.category);
+    const modifierGroups = getApplicableModifierGroups(addForm.product.category);
     const showAdicionales = productUsesAdicionales(addForm.product.category);
 
-    if (showCutStyle && !addForm.cutStyle) {
-      setActionError('Selecciona si va enteras o picadas');
-      return;
-    }
-
-    if (showNoteOptions && addForm.noteOptions.length === 0) {
-      setActionError('Selecciona al menos una preferencia');
-      return;
+    for (const group of modifierGroups) {
+      const selected = addForm.selections[group.id] ?? [];
+      if (group.required && selected.length === 0) {
+        setActionError(`Selecciona ${group.label.toLowerCase()}`);
+        return;
+      }
     }
 
     addItemMutation.mutate({
       product_id: addForm.product.id,
       quantity,
-      notes: showNoteOptions
-        ? buildItemNotes(addForm.cutStyle, addForm.noteOptions)
-        : undefined,
+      notes: buildItemNotes(addForm.product.category, addForm.selections),
       adicional_ids: showAdicionales ? addForm.adicionalIds : undefined,
     });
   }
@@ -460,8 +438,7 @@ function OrderView({ orderId, canDeliver = false }: OrderViewProps) {
                       setAddForm({
                         product,
                         quantity: '1',
-                        cutStyle: DEFAULT_ITEM_CUT_STYLE,
-                        noteOptions: [DEFAULT_ITEM_NOTE],
+                        selections: getDefaultSelections(product.category),
                         adicionalIds: [],
                       });
                       setActionError('');
@@ -784,65 +761,50 @@ function OrderView({ orderId, canDeliver = false }: OrderViewProps) {
               />
             </label>
 
-            {productUsesCutStyle(addForm.product.category) && (
-              <fieldset className="order-view__field order-view__note-options">
-                <legend>Corte</legend>
-                <div
-                  className="order-view__note-options-grid"
-                  role="radiogroup"
-                  aria-label="Enteras o picadas"
-                >
-                  {ITEM_CUT_STYLES.map((option) => {
-                    const selected = addForm.cutStyle === option;
-                    return (
-                      <button
-                        key={option}
-                        type="button"
-                        role="radio"
-                        className={`order-view__note-option${selected ? ' order-view__note-option--selected' : ''}`}
-                        aria-checked={selected}
-                        onClick={() =>
-                          setAddForm((prev) => (prev ? { ...prev, cutStyle: option } : prev))
-                        }
-                      >
-                        {option}
-                      </button>
-                    );
-                  })}
-                </div>
-              </fieldset>
-            )}
+            {getApplicableModifierGroups(addForm.product.category).map((group) => {
+              const selectedOptions = selectedModifierOptions(addForm, group.id);
+              const isSingle = group.mode === 'single';
 
-            {productUsesPreferences(addForm.product.category) && (
-              <fieldset className="order-view__field order-view__note-options">
-                <legend>Preferencias</legend>
-                <div className="order-view__note-options-grid" role="group" aria-label="Preferencias del producto">
-                  {ITEM_NOTE_OPTIONS.map((option) => {
-                    const selected = addForm.noteOptions.includes(option);
-                    return (
-                      <button
-                        key={option}
-                        type="button"
-                        className={`order-view__note-option${selected ? ' order-view__note-option--selected' : ''}`}
-                        aria-pressed={selected}
-                        onClick={() =>
-                          setAddForm((prev) =>
-                            prev
-                              ? {
-                                  ...prev,
-                                  noteOptions: toggleItemNoteOption(prev.noteOptions, option),
-                                }
-                              : prev,
-                          )
-                        }
-                      >
-                        {option}
-                      </button>
-                    );
-                  })}
-                </div>
-              </fieldset>
-            )}
+              return (
+                <fieldset key={group.id} className="order-view__field order-view__note-options">
+                  <legend>{group.label}</legend>
+                  <div
+                    className="order-view__note-options-grid"
+                    role={isSingle ? 'radiogroup' : 'group'}
+                    aria-label={group.label}
+                  >
+                    {group.options.map((option) => {
+                      const selected = selectedOptions.includes(option);
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          role={isSingle ? 'radio' : undefined}
+                          className={`order-view__note-option${selected ? ' order-view__note-option--selected' : ''}`}
+                          aria-checked={isSingle ? selected : undefined}
+                          aria-pressed={isSingle ? undefined : selected}
+                          onClick={() =>
+                            setAddForm((prev) => {
+                              if (!prev) return prev;
+                              const current = prev.selections[group.id] ?? [];
+                              const next = isSingle
+                                ? [option]
+                                : toggleMultipleModifierOption(current, option, group.defaultOption);
+                              return {
+                                ...prev,
+                                selections: { ...prev.selections, [group.id]: next },
+                              };
+                            })
+                          }
+                        >
+                          {option}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+              );
+            })}
 
             {productUsesAdicionales(addForm.product.category) && adicionalProducts.length > 0 && (
               <fieldset className="order-view__field order-view__note-options">
