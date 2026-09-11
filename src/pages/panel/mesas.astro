@@ -13,7 +13,7 @@ const isAdmin = session.role === 'admin';
       <h1 class="panel-page__title">Mesas</h1>
     </header>
 
-    <TablesManager client:load isAdmin={isAdmin} />
+    <TablesManager client:only="react" isAdmin={isAdmin} />
   </div>
 </PanelLayout>
 

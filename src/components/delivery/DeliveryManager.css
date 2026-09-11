@@ -457,6 +457,230 @@
   }
 }
 
+.delivery-manager__type-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.delivery-manager__type-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.625rem;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.delivery-manager__type-btn--active {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, white);
+  color: var(--color-primary);
+}
+
+.delivery-manager__type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.delivery-manager__type-badge--delivery {
+  background: color-mix(in srgb, var(--color-primary) 12%, white);
+  color: var(--color-primary);
+}
+
+.delivery-manager__type-badge--takeaway {
+  background: color-mix(in srgb, var(--color-warning) 20%, white);
+  color: color-mix(in srgb, var(--color-warning) 70%, black);
+}
+
+.delivery-manager__card-fee-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.125rem 0;
+}
+
+.delivery-manager__card-fee {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.delivery-manager__card-fee--missing {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.375rem;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  font-size: 0.71875rem;
+}
+
+.delivery-manager__fee-tag-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.375rem;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.delivery-manager__fee-tag-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+}
+
+.delivery-manager__btn-assign-fee {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.4375rem 0.75rem;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  border-radius: 0.625rem;
+  background: #f59e0b;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+  animation: pulse-border 2s infinite ease-in-out;
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0);
+  }
+}
+
+.delivery-manager__btn-assign-fee:hover {
+  background: #d97706;
+}
+
+.delivery-manager__ticket-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.4375rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.625rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.delivery-manager__ticket-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+}
+
+/* Fee Modal Details */
+.delivery-manager__fee-info-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.delivery-manager__fee-info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.delivery-manager__fee-info-label {
+  color: var(--color-text-muted);
+}
+
+.delivery-manager__fee-info-val {
+  color: var(--color-text);
+  text-align: right;
+}
+
+.delivery-manager__quick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: -0.25rem;
+}
+
+.delivery-manager__quick-chip {
+  padding: 0.375rem 0.625rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.delivery-manager__quick-chip:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+}
+
+.delivery-manager__quick-chip--active {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.delivery-manager__fee-preview-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+  color: var(--color-text);
+  font-size: 0.875rem;
+}
+
+.delivery-manager__fee-preview-box strong {
+  font-size: 1.125rem;
+  color: var(--color-primary);
+}
+
+
 @media (max-width: 480px) {
   .delivery-manager__overlay.ui-modal {
     padding: 0;

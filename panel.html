@@ -1,0 +1,1967 @@
+<!DOCTYPE html><html lang="es" data-astro-cid-gfcipxte><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" type="image/webp" href="/brand/logo.png"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><title>Inicio | Panel</title><meta name="astro-view-transitions-enabled" content="true"><meta name="astro-view-transitions-fallback" content="animate"><script type="module" src="/node_modules/.pnpm/astro@7.0.7_@emnapi+core@1._91fc358b3060c220f2690e8bcdd5dd78/node_modules/astro/components/ClientRouter.astro?astro&type=script&index=0&lang.ts"></script><style>:root { --color-primary: #0F0529; --color-primary-foreground: #dadada; --color-secondary: #1F0A52; --color-secondary-foreground: #dadada; --color-accent: #9485ED; --color-background: #F8F9FA; --color-surface: #FFFFFF; --color-text: #1A1A2E; --color-text-muted: #6C757D; --color-border: #DEE2E6; --color-success: #2D6A4F; --color-warning: #E9C46A; --color-error: #D00000; }</style><style data-vite-dev-id="C:/Users/Fadi Kirbag/Desktop/Developer/05-COMANDAS/demo-comandas/src/components/ui/MultiCurrencyPrice.css">.multi-price {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  line-height: 1.2;
+}
+
+.multi-price--right {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.multi-price__cop {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.multi-price__foreign {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.multi-price__sep {
+  opacity: 0.55;
+}
+
+.multi-price--total .multi-price__cop {
+  font-size: 1.25rem;
+}
+
+.multi-price--total .multi-price__foreign {
+  font-size: 0.75rem;
+}
+
+.multi-price--inline {
+  display: inline-flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.375rem;
+}
+
+.multi-price--inline .multi-price__cop {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.multi-price--inline .multi-price__foreign {
+  font-size: 0.75em;
+}
+</style><style data-vite-dev-id="C:/Users/Fadi Kirbag/Desktop/Developer/05-COMANDAS/demo-comandas/src/components/ui/ui.css">:root {
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 0.875rem;
+  --shadow-toast: 0 8px 24px rgb(0 0 0 / 12%);
+  --transition-fast: 0.15s ease;
+}
+
+.ui-spin {
+  animation: ui-spin 0.8s linear infinite;
+}
+
+@keyframes ui-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Alerts */
+.ui-alert {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.ui-alert--error {
+  background: color-mix(in srgb, var(--color-error) 10%, white);
+  color: var(--color-error);
+  border: 1px solid color-mix(in srgb, var(--color-error) 25%, transparent);
+}
+
+.ui-alert--success {
+  background: color-mix(in srgb, var(--color-success) 12%, white);
+  color: var(--color-success);
+  border: 1px solid color-mix(in srgb, var(--color-success) 25%, transparent);
+}
+
+.ui-alert--info {
+  background: color-mix(in srgb, var(--color-primary) 10%, white);
+  color: var(--color-primary);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+/* Spinner */
+.ui-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 2.5rem 1rem;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+/* Empty state */
+.ui-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1.5rem;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.ui-empty__icon {
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+.ui-empty__title {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--color-text);
+}
+
+.ui-empty__body {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.ui-empty__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.25rem;
+}
+
+/* Toasts */
+.ui-toast-container {
+  position: fixed;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: min(22rem, calc(100vw - 2rem));
+  pointer-events: none;
+}
+
+.ui-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.75rem 0.875rem;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-toast);
+  border: 1px solid var(--color-border);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  pointer-events: auto;
+  animation: ui-toast-in 0.2s ease;
+}
+
+@keyframes ui-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ui-toast--success {
+  border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+  color: var(--color-success);
+}
+
+.ui-toast--error {
+  border-color: color-mix(in srgb, var(--color-error) 35%, transparent);
+  color: var(--color-error);
+}
+
+.ui-toast--info {
+  border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+  color: var(--color-text);
+}
+
+.ui-toast__message {
+  flex: 1;
+  color: var(--color-text);
+}
+
+.ui-toast__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.125rem;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: 0.25rem;
+}
+
+.ui-toast__close:hover {
+  color: var(--color-text);
+}
+
+/* Skeleton */
+.ui-skeleton {
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-border) 40%, white) 25%,
+    color-mix(in srgb, var(--color-border) 20%, white) 50%,
+    color-mix(in srgb, var(--color-border) 40%, white) 75%
+  );
+  background-size: 200% 100%;
+  animation: ui-skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+.ui-skeleton-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+}
+
+.ui-skeleton-card {
+  height: 7rem;
+  border-radius: var(--radius-lg);
+}
+
+.ui-skeleton-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.ui-skeleton-row {
+  height: 2.75rem;
+  border-radius: var(--radius-md);
+}
+
+@keyframes ui-skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Modal */
+.ui-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.ui-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  background: rgb(0 0 0 / 45%);
+  cursor: pointer;
+}
+
+.ui-modal__panel {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 28rem);
+  max-height: min(90vh, 48rem);
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 16px 48px rgb(0 0 0 / 16%);
+}
+
+.ui-modal__panel--wide {
+  width: min(100%, 40rem);
+}
+
+.ui-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ui-modal__title-wrap h2,
+.ui-modal__title-wrap h3 {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.ui-modal__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.ui-modal__close:hover {
+  background: color-mix(in srgb, var(--color-border) 50%, transparent);
+  color: var(--color-text);
+}
+
+.ui-modal__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.25rem;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+</style><style data-vite-dev-id="C:/Users/Fadi Kirbag/Desktop/Developer/05-COMANDAS/demo-comandas/src/components/delivery/DeliveryManager.css">.delivery-manager__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.delivery-manager__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.delivery-manager__filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.4375rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.delivery-manager__filter--active {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, white);
+  color: var(--color-primary);
+}
+
+.delivery-manager__filter-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--color-success);
+  color: white;
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.delivery-manager__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.delivery-manager__summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+}
+
+.delivery-manager__summary-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  padding: 0 0.5rem;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--color-primary) 12%, white);
+  color: var(--color-primary);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.delivery-manager__summary-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.delivery-manager__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border: none;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.delivery-manager__btn--primary {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+.delivery-manager__btn--ghost {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.delivery-manager__alert {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--color-error) 10%, white);
+  border: 1px solid color-mix(in srgb, var(--color-error) 25%, white);
+  color: var(--color-error);
+  font-size: 0.875rem;
+}
+
+.delivery-manager__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  gap: 1rem;
+}
+
+.delivery-manager__card {
+  display: block;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: var(--color-surface);
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 4%);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.delivery-manager__card:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 8px 20px rgb(0 0 0 / 8%);
+  transform: translateY(-1px);
+}
+
+.delivery-manager__card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.delivery-manager__card-title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.delivery-manager__status {
+  display: inline-flex;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.delivery-manager__status--pendiente {
+  background: color-mix(in srgb, var(--color-warning) 25%, white);
+  color: color-mix(in srgb, var(--color-warning) 70%, black);
+}
+
+.delivery-manager__status--cocina,
+.delivery-manager__status--entregado {
+  background: color-mix(in srgb, var(--color-primary) 15%, white);
+  color: var(--color-primary);
+}
+
+.delivery-manager__status--listo {
+  background: color-mix(in srgb, var(--color-success) 18%, white);
+  color: var(--color-success);
+}
+
+.delivery-manager__card--ready {
+  border-color: color-mix(in srgb, var(--color-success) 45%, white);
+  background: color-mix(in srgb, var(--color-success) 6%, white);
+}
+
+.delivery-manager__card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0 0 0.875rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.delivery-manager__card-meta span {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.375rem;
+}
+
+.delivery-manager__card-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.625rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.delivery-manager__card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.delivery-manager__whatsapp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.4375rem 0.75rem;
+  border: none;
+  border-radius: 0.625rem;
+  background: #25d366;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.delivery-manager__whatsapp-btn:hover {
+  background: #1ebe57;
+}
+
+.delivery-manager__card-total {
+  min-width: 0;
+}
+
+.delivery-manager__card-action {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.delivery-manager__deliver-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.4375rem 0.75rem;
+  border: none;
+  border-radius: 0.625rem;
+  background: var(--color-success);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.delivery-manager__loading,
+.delivery-manager__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem 1.5rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 1rem;
+  background: var(--color-surface);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.delivery-manager__empty p {
+  margin: 0;
+  max-width: 24rem;
+  line-height: 1.5;
+}
+
+.delivery-manager__overlay.ui-modal {
+  background: transparent;
+}
+
+.delivery-manager__modal {
+  width: 100%;
+  max-width: 28rem;
+  max-height: min(92vh, 40rem);
+  border-radius: 1rem;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.18);
+}
+
+.delivery-manager__modal .ui-modal__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.delivery-manager__modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-shrink: 0;
+  padding: 1.25rem 1.25rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.delivery-manager__modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.delivery-manager__close {
+  display: inline-flex;
+  padding: 0.375rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.delivery-manager__form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.delivery-manager__form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1rem 1.25rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.delivery-manager__label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.delivery-manager__input,
+.delivery-manager__textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.625rem;
+  background: var(--color-background);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.delivery-manager__textarea {
+  resize: vertical;
+  min-height: 4.5rem;
+}
+
+.delivery-manager__timing-fieldset {
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+
+.delivery-manager__timing-fieldset .delivery-manager__label {
+  margin-bottom: 0.5rem;
+}
+
+.delivery-manager__timing-option {
+  display: flex;
+  gap: 0.625rem;
+  align-items: flex-start;
+  padding: 0.625rem 0.75rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.625rem;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.delivery-manager__timing-option:last-child {
+  margin-bottom: 0;
+}
+
+.delivery-manager__timing-option > span {
+  min-width: 0;
+}
+
+.delivery-manager__timing-option input {
+  margin-top: 0.2rem;
+}
+
+.delivery-manager__timing-option strong {
+  display: block;
+  font-size: 0.9rem;
+}
+
+.delivery-manager__timing-option small {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.delivery-manager__timing {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.delivery-manager__card-action--pay {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.delivery-manager__modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  padding: 1rem 1.25rem 1.25rem;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.delivery-manager__spin {
+  animation: delivery-spin 0.8s linear infinite;
+}
+
+@keyframes delivery-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 480px) {
+  .delivery-manager__overlay.ui-modal {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .delivery-manager__modal {
+    max-width: none;
+    max-height: 92vh;
+    border-radius: 1rem 1rem 0 0;
+  }
+}
+</style><style data-vite-dev-id="C:/Users/Fadi Kirbag/Desktop/Developer/05-COMANDAS/demo-comandas/src/components/tables/TablesManager.css">.tables-manager__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.tables-manager__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.tables-manager__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.tables-manager__legend-dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tables-manager__legend-dot--libre {
+  background: var(--color-success);
+}
+
+.tables-manager__legend-dot--ocupada {
+  background: var(--color-error);
+}
+
+.tables-manager__legend-dot--limpieza {
+  background: var(--color-error);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error) 25%, transparent);
+}
+
+.tables-manager__summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
+}
+
+.tables-manager__summary-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  padding: 0 0.5rem;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--color-primary) 12%, white);
+  color: var(--color-primary);
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tables-manager__summary-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.tables-manager__summary-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.tables-manager__summary-total {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  line-height: 1.2;
+}
+
+.tables-manager__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border: none;
+  border-radius: 0.75rem;
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.tables-manager__btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.tables-manager__btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.tables-manager__btn--ghost {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  text-decoration: none;
+}
+
+.tables-manager__btn--ghost:hover {
+  opacity: 1;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.tables-manager__btn--danger {
+  background: var(--color-error);
+  color: white;
+}
+
+.tables-manager__alert {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--color-error) 10%, white);
+  border: 1px solid color-mix(in srgb, var(--color-error) 25%, white);
+  color: var(--color-error);
+  font-size: 0.875rem;
+}
+
+.tables-manager__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 1rem;
+}
+
+.tables-manager__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 7.5rem;
+  padding: 1rem 0.75rem;
+  border: 2px solid transparent;
+  border-radius: 1rem;
+  background: var(--color-surface);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 5%);
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+  text-align: center;
+}
+
+.tables-manager__card:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgb(0 0 0 / 10%);
+}
+
+.tables-manager__card:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.tables-manager__card--libre {
+  border-color: color-mix(in srgb, var(--color-success) 35%, white);
+  background: color-mix(in srgb, var(--color-success) 8%, white);
+}
+
+.tables-manager__card--ocupada {
+  border-color: color-mix(in srgb, var(--color-error) 45%, white);
+  background: color-mix(in srgb, var(--color-error) 12%, white);
+}
+
+.tables-manager__card--limpieza {
+  border-color: color-mix(in srgb, var(--color-error) 65%, white);
+  background: color-mix(in srgb, var(--color-error) 18%, white);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--color-error) 18%, transparent);
+}
+
+.tables-manager__card--limpieza:hover:not(:disabled) {
+  border-color: var(--color-error);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--color-error) 22%, transparent);
+}
+
+.tables-manager__card-number {
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--color-text);
+}
+
+.tables-manager__card-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tables-manager__card-sublabel {
+  margin-top: -0.15rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-error);
+}
+
+.tables-manager__card--libre .tables-manager__card-label {
+  color: var(--color-success);
+}
+
+.tables-manager__card--ocupada .tables-manager__card-label,
+.tables-manager__card--limpieza .tables-manager__card-label {
+  color: var(--color-error);
+}
+
+.tables-manager__card-capacity {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.tables-manager__card-hint {
+  margin-top: 0.25rem;
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+  line-height: 1.3;
+}
+
+.tables-manager__card-hint--action {
+  margin-top: 0.4rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.5rem;
+  background: var(--color-error);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  animation: tables-clean-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes tables-clean-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-error) 35%, transparent);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+
+.tables-manager__card-actions {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  gap: 0.25rem;
+}
+
+.tables-manager__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.tables-manager__icon-btn:hover {
+  color: var(--color-text);
+  border-color: var(--color-primary);
+}
+
+.tables-manager__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem;
+  color: var(--color-text-muted);
+}
+
+.tables-manager__empty {
+  padding: 3rem 1.5rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 1rem;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.tables-manager__modal-backdrop.ui-modal {
+  background: transparent;
+}
+
+.tables-manager__modal {
+  width: 100%;
+  max-width: 24rem;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background: var(--color-surface);
+  box-shadow: 0 20px 40px rgb(0 0 0 / 15%);
+}
+
+.tables-manager__modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.tables-manager__modal-header h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.tables-manager__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.tables-manager__field label {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.tables-manager__field input {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.625rem;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-size: 0.875rem;
+}
+
+.tables-manager__field input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.tables-manager__modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.tables-manager__spin {
+  animation: tables-spin 0.8s linear infinite;
+}
+
+@keyframes tables-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style><style data-vite-dev-id="C:/Users/Fadi Kirbag/Desktop/Developer/05-COMANDAS/demo-comandas/node_modules/.pnpm/astro@7.0.7_@emnapi+core@1._91fc358b3060c220f2690e8bcdd5dd78/node_modules/astro/components/ClientRouter.astro?astro&amp;type=style&amp;index=0&amp;lang.css">/* Route announcer */
+	.astro-route-announcer {
+		position: absolute;
+		left: 0;
+		top: 0;
+		clip: rect(0 0 0 0);
+		clip-path: inset(50%);
+		overflow: hidden;
+		white-space: nowrap;
+		width: 1px;
+		height: 1px;
+	}</style><style data-vite-dev-id="C:/Users/Fadi Kirbag/Desktop/Developer/05-COMANDAS/demo-comandas/src/components/layout/Navbar.css">:root {
+  --navbar-width: 18rem;
+}
+
+body.nav-open {
+  overflow: hidden;
+}
+
+.navbar-mobile {
+  display: none;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  align-items: center;
+  gap: 0.75rem;
+  height: 3.5rem;
+  padding: 0 1rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.navbar-mobile__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: none;
+  border-radius: 0.625rem;
+  background: color-mix(in srgb, var(--color-secondary) 8%, transparent);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.navbar-mobile__toggle:hover {
+  background: color-mix(in srgb, var(--color-secondary) 14%, transparent);
+}
+
+.navbar-mobile__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  color: var(--color-text);
+  font-weight: 700;
+  font-size: 1rem;
+  text-decoration: none;
+}
+
+.navbar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  border: none;
+  padding: 0;
+  background: rgb(0 0 0 / 45%);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.navbar-backdrop--visible {
+  opacity: 1;
+}
+
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  width: var(--navbar-width);
+  height: 100vh;
+  height: 100dvh;
+  border-right: 1px solid color-mix(in srgb, var(--color-secondary-foreground) 12%, transparent);
+  background: var(--color-secondary);
+  color: var(--color-secondary-foreground);
+  transform: translateX(0);
+  transition: transform 0.25s ease;
+}
+
+.navbar__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1.25rem 1rem 0.875rem;
+  flex-shrink: 0;
+}
+
+.navbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.navbar__brand img {
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #000;
+  filter: drop-shadow(0 4px 12px rgb(0 0 0 / 20%));
+}
+
+.navbar__brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.navbar__brand-name {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.navbar__brand-tagline {
+  font-size: 0.6875rem;
+  line-height: 1.3;
+  opacity: 0.65;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.navbar__close {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--color-secondary-foreground) 10%, transparent);
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.navbar__close:hover {
+  background: color-mix(in srgb, var(--color-secondary-foreground) 16%, transparent);
+}
+
+.navbar__nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0.75rem 0.75rem;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-secondary-foreground) 20%, transparent) transparent;
+}
+
+.navbar__section {
+  margin-bottom: 0.5rem;
+}
+
+.navbar__section--divided {
+  margin-top: 0.875rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-secondary-foreground) 14%, transparent);
+}
+
+.navbar__section-label {
+  margin: 0 0.375rem 0.5rem;
+  padding: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-secondary-foreground) 50%, transparent);
+}
+
+.navbar__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1875rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.navbar__link {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.6875rem 0.875rem;
+  border-radius: 0.625rem;
+  color: color-mix(in srgb, var(--color-secondary-foreground) 78%, transparent);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.navbar__link > svg {
+  flex-shrink: 0;
+  margin-top: 0.0625rem;
+}
+
+.navbar__link-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.navbar__link-label {
+  line-height: 1.25;
+}
+
+.navbar__link-desc {
+  font-size: 0.6875rem;
+  font-weight: 400;
+  line-height: 1.3;
+  color: color-mix(in srgb, var(--color-secondary-foreground) 52%, transparent);
+}
+
+.navbar__link:hover {
+  background: color-mix(in srgb, var(--color-secondary-foreground) 8%, transparent);
+  color: var(--color-secondary-foreground);
+}
+
+.navbar__link:hover .navbar__link-desc {
+  color: color-mix(in srgb, var(--color-secondary-foreground) 68%, transparent);
+}
+
+.navbar__link--active {
+  background: color-mix(in srgb, var(--color-primary) 22%, transparent);
+  color: var(--color-secondary-foreground);
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+.navbar__link--active .navbar__link-desc {
+  color: color-mix(in srgb, var(--color-secondary-foreground) 72%, transparent);
+}
+
+.navbar__footer {
+  flex-shrink: 0;
+  padding: 0.875rem 1rem 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-secondary-foreground) 12%, transparent);
+  background: color-mix(in srgb, var(--color-secondary-foreground) 4%, var(--color-secondary));
+}
+
+.navbar__user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 0.625rem;
+  background: color-mix(in srgb, var(--color-secondary-foreground) 6%, transparent);
+}
+
+.navbar__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.625rem;
+  background: color-mix(in srgb, var(--color-primary) 35%, var(--color-secondary));
+  color: var(--color-primary-foreground);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.navbar__user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.navbar__username {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.navbar__role {
+  font-size: 0.75rem;
+  opacity: 0.65;
+}
+
+.navbar__logout-form {
+  margin: 0;
+}
+
+.navbar__logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid color-mix(in srgb, var(--color-secondary-foreground) 18%, transparent);
+  border-radius: 0.625rem;
+  background: transparent;
+  color: color-mix(in srgb, var(--color-secondary-foreground) 85%, transparent);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.navbar__logout:hover {
+  background: color-mix(in srgb, var(--color-secondary-foreground) 8%, transparent);
+  border-color: color-mix(in srgb, var(--color-secondary-foreground) 28%, transparent);
+  color: var(--color-secondary-foreground);
+}
+
+@media (max-width: 1023px) {
+  .navbar-mobile {
+    display: flex;
+  }
+
+  .navbar-backdrop {
+    display: block;
+    pointer-events: none;
+  }
+
+  .navbar-backdrop--visible {
+    pointer-events: auto;
+  }
+
+  .navbar {
+    transform: translateX(-100%);
+  }
+
+  .navbar--open {
+    transform: translateX(0);
+    box-shadow: 8px 0 32px rgb(0 0 0 / 25%);
+  }
+
+  .navbar__close {
+    display: flex;
+  }
+}
+</style><style data-vite-dev-id="C:/Users/Fadi Kirbag/Desktop/Developer/05-COMANDAS/demo-comandas/src/styles/global.css">:root {
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 0.875rem;
+  --shadow-toast: 0 8px 24px rgb(0 0 0 / 12%);
+  --transition-fast: 0.15s ease;
+}
+
+.ui-spin {
+  animation: ui-spin 0.8s linear infinite;
+}
+
+@keyframes ui-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Alerts */
+
+.ui-alert {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.ui-alert--error {
+  background: color-mix(in srgb, var(--color-error) 10%, white);
+  color: var(--color-error);
+  border: 1px solid color-mix(in srgb, var(--color-error) 25%, transparent);
+}
+
+.ui-alert--success {
+  background: color-mix(in srgb, var(--color-success) 12%, white);
+  color: var(--color-success);
+  border: 1px solid color-mix(in srgb, var(--color-success) 25%, transparent);
+}
+
+.ui-alert--info {
+  background: color-mix(in srgb, var(--color-primary) 10%, white);
+  color: var(--color-primary);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+/* Spinner */
+
+.ui-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 2.5rem 1rem;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+/* Empty state */
+
+.ui-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1.5rem;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.ui-empty__icon {
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+.ui-empty__title {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--color-text);
+}
+
+.ui-empty__body {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.ui-empty__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.25rem;
+}
+
+/* Toasts */
+
+.ui-toast-container {
+  position: fixed;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: min(22rem, calc(100vw - 2rem));
+  pointer-events: none;
+}
+
+.ui-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.75rem 0.875rem;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-toast);
+  border: 1px solid var(--color-border);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  pointer-events: auto;
+  animation: ui-toast-in 0.2s ease;
+}
+
+@keyframes ui-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ui-toast--success {
+  border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+  color: var(--color-success);
+}
+
+.ui-toast--error {
+  border-color: color-mix(in srgb, var(--color-error) 35%, transparent);
+  color: var(--color-error);
+}
+
+.ui-toast--info {
+  border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+  color: var(--color-text);
+}
+
+.ui-toast__message {
+  flex: 1;
+  color: var(--color-text);
+}
+
+.ui-toast__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.125rem;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: 0.25rem;
+}
+
+.ui-toast__close:hover {
+  color: var(--color-text);
+}
+
+/* Skeleton */
+
+.ui-skeleton {
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-border) 40%, white) 25%,
+    color-mix(in srgb, var(--color-border) 20%, white) 50%,
+    color-mix(in srgb, var(--color-border) 40%, white) 75%
+  );
+  background-size: 200% 100%;
+  animation: ui-skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+.ui-skeleton-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+}
+
+.ui-skeleton-card {
+  height: 7rem;
+  border-radius: var(--radius-lg);
+}
+
+.ui-skeleton-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.ui-skeleton-row {
+  height: 2.75rem;
+  border-radius: var(--radius-md);
+}
+
+@keyframes ui-skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Modal */
+
+.ui-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.ui-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  background: rgb(0 0 0 / 45%);
+  cursor: pointer;
+}
+
+.ui-modal__panel {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 28rem);
+  max-height: min(90vh, 48rem);
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 16px 48px rgb(0 0 0 / 16%);
+}
+
+.ui-modal__panel--wide {
+  width: min(100%, 40rem);
+}
+
+.ui-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ui-modal__title-wrap h2,
+.ui-modal__title-wrap h3 {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.ui-modal__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.ui-modal__close:hover {
+  background: color-mix(in srgb, var(--color-border) 50%, transparent);
+  color: var(--color-text);
+}
+
+.ui-modal__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.25rem;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--color-background);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+</style><style data-vite-dev-id="C:/Users/Fadi Kirbag/Desktop/Developer/05-COMANDAS/demo-comandas/src/layouts/PanelLayout.astro?astro&amp;type=style&amp;index=0&amp;lang.css">.panel-layout[data-astro-cid-gfcipxte] {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--color-background);
+}
+
+.panel-layout__content[data-astro-cid-gfcipxte] {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.panel-layout__main[data-astro-cid-gfcipxte] {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  padding: 1.5rem;
+}
+
+@media (width >= 1024px) {
+  .panel-layout__content[data-astro-cid-gfcipxte] {
+    margin-left: var(--navbar-width, 17rem);
+  }
+
+  .panel-layout__main[data-astro-cid-gfcipxte] {
+    padding: 2rem;
+  }
+}
+</style><style data-vite-dev-id="C:/Users/Fadi Kirbag/Desktop/Developer/05-COMANDAS/demo-comandas/src/pages/panel/index.astro?astro&amp;type=style&amp;index=0&amp;lang.css">.dashboard__header[data-astro-cid-a6lx4cag] {
+  margin-bottom: 1.5rem;
+}
+
+.dashboard__eyebrow[data-astro-cid-a6lx4cag] {
+  margin: 0 0 .5rem;
+  font-size: .8125rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.dashboard__title[data-astro-cid-a6lx4cag] {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: var(--color-text);
+}
+
+.dashboard__section[data-astro-cid-a6lx4cag] + .dashboard__section[data-astro-cid-a6lx4cag] {
+  margin-top: 2rem;
+}
+</style><script type="module" src="/@vite/client"></script><script type="module" src="/src/components/ui/MultiCurrencyPrice.css"></script><script type="module" src="/src/components/ui/ui.css"></script><script type="module" src="/src/components/delivery/DeliveryManager.css"></script><script type="module" src="/src/components/tables/TablesManager.css"></script><script type="module" src="/node_modules/.pnpm/astro@7.0.7_@emnapi+core@1._91fc358b3060c220f2690e8bcdd5dd78/node_modules/astro/components/ClientRouter.astro?astro&type=style&index=0&lang.css"></script><script type="module" src="/src/components/layout/Navbar.css"></script><script type="module" src="/src/styles/global.css"></script><script type="module" src="/src/layouts/PanelLayout.astro?astro&type=style&index=0&lang.css"></script><script type="module" src="/src/pages/panel/index.astro?astro&type=style&index=0&lang.css"></script></head><body data-astro-cid-gfcipxte><div class="panel-layout" data-astro-cid-gfcipxte><style>astro-island,astro-slot,astro-static-slot{display:contents}</style><script>(()=>{var e=async t=>{await(await t())()};(self.Astro||(self.Astro={})).load=e;window.dispatchEvent(new Event("astro:load"));})();</script><script>(()=>{var g=Object.defineProperty;var w=(d,s,h)=>s in d?g(d,s,{enumerable:!0,configurable:!0,writable:!0,value:h}):d[s]=h;var l=(d,s,h)=>w(d,typeof s!="symbol"?s+"":s,h);var E=new Set(["__proto__","constructor","prototype"]);{let d={0:t=>y(t),1:t=>h(t),2:t=>new RegExp(t),3:t=>new Date(t),4:t=>new Map(h(t)),5:t=>new Set(h(t)),6:t=>BigInt(t),7:t=>new URL(t),8:t=>new Uint8Array(t),9:t=>new Uint16Array(t),10:t=>new Uint32Array(t),11:t=>Number.POSITIVE_INFINITY*t},s=t=>{let[p,e]=t;return p in d?d[p](e):void 0},h=t=>t.map(s),y=t=>typeof t!="object"||t===null?t:Object.fromEntries(Object.entries(t).map(([p,e])=>[p,s(e)]));class f extends HTMLElement{constructor(){super(...arguments);l(this,"Component");l(this,"hydrator");l(this,"hydrate",async()=>{var b;if(!this.hydrator||!this.isConnected)return;let e=(b=this.parentElement)==null?void 0:b.closest("astro-island[ssr]");if(e){e.addEventListener("astro:hydrate",this.hydrate,{once:!0});return}let n=this.querySelectorAll("astro-slot"),r={},i=this.querySelectorAll("template[data-astro-template]");for(let o of i){let c=o.closest(this.tagName);c!=null&&c.isSameNode(this)&&(r[o.getAttribute("data-astro-template")||"default"]=o.innerHTML,o.remove())}for(let o of n){let c=o.closest(this.tagName);c!=null&&c.isSameNode(this)&&(r[o.getAttribute("name")||"default"]=o.innerHTML)}let m;try{m=this.hasAttribute("props")?y(JSON.parse(this.getAttribute("props"))):{}}catch(o){let c=this.getAttribute("component-url")||"<unknown>",v=this.getAttribute("component-export");throw v&&(c+=` (export ${v})`),console.error(`[hydrate] Error parsing props for component ${c}`,this.getAttribute("props"),o),o}let a,u=this.hydrator(this);a=performance.now(),await u(this.Component,m,r,{client:this.getAttribute("client")}),a&&this.setAttribute("client-render-time",(performance.now()-a).toString()),this.removeAttribute("ssr"),this.dispatchEvent(new CustomEvent("astro:hydrate"))});l(this,"unmount",()=>{this.isConnected||this.dispatchEvent(new CustomEvent("astro:unmount"))})}disconnectedCallback(){document.removeEventListener("astro:after-swap",this.unmount),document.addEventListener("astro:after-swap",this.unmount,{once:!0})}connectedCallback(){if(!this.hasAttribute("await-children")||document.readyState==="interactive"||document.readyState==="complete")this.childrenConnectedCallback();else{let e=()=>{document.removeEventListener("DOMContentLoaded",e),n.disconnect(),this.childrenConnectedCallback()},n=new MutationObserver(()=>{var r;((r=this.lastChild)==null?void 0:r.nodeType)===Node.COMMENT_NODE&&this.lastChild.nodeValue==="astro:end"&&(this.lastChild.remove(),e())});n.observe(this,{childList:!0}),document.addEventListener("DOMContentLoaded",e)}}async childrenConnectedCallback(){let e=this.getAttribute("before-hydration-url");e&&await import(e),this.start()}getRetryImportUrl(e){let n=new URL(e,document.baseURI),r=`astro-retry=${Date.now()}`,i=n.hash.replace(/^#/,"");return n.hash=i?`${i}&${r}`:r,n.toString()}async importWithRetry(e){try{return await import(e)}catch(n){return await new Promise(r=>setTimeout(r,1e3)),import(this.getRetryImportUrl(e))}}handleHydrationError(e){let n=this.getAttribute("component-url"),r=new CustomEvent("astro:hydration-error",{cancelable:!0,bubbles:!0,composed:!0,detail:{error:e,componentUrl:n}});this.dispatchEvent(r)&&console.error(`[astro-island] Error hydrating ${n}`,e)}async start(){let e=JSON.parse(this.getAttribute("opts")),n=this.getAttribute("client");if(Astro[n]===void 0){window.addEventListener(`astro:${n}`,()=>this.start(),{once:!0});return}try{await Astro[n](async()=>{let r=this.getAttribute("renderer-url");try{let[i,{default:m}]=await Promise.all([this.importWithRetry(this.getAttribute("component-url")),r?this.importWithRetry(r):Promise.resolve({default:()=>()=>{}})]),a=this.getAttribute("component-export")||"default";if(a.includes(".")){this.Component=i;for(let u of a.split(".")){if(E.has(u)||!this.Component||typeof this.Component!="object"&&typeof this.Component!="function"||!Object.hasOwn(this.Component,u))throw new Error(`Invalid component export path: ${a}`);this.Component=this.Component[u]}}else{if(E.has(a))throw new Error(`Invalid component export path: ${a}`);this.Component=i[a]}return this.hydrator=m,this.hydrate}catch(i){return this.handleHydrationError(i),()=>{}}},e,this)}catch(r){this.handleHydrationError(r)}}attributeChangedCallback(){this.hydrate()}}l(f,"observedAttributes",["props"]),customElements.get("astro-island")||customElements.define("astro-island",f)}})();</script><astro-island uid="1puBvJ" prefix="r5" component-url="/src/components/layout/Navbar.tsx" component-export="default" renderer-url="/node_modules/.pnpm/@astrojs+react@6.0.1_@types_1a4daf47086d570b75df784fb186f116/node_modules/@astrojs/react/dist/client.js" props="{&quot;currentPath&quot;:[0,&quot;/panel&quot;],&quot;username&quot;:[0,&quot;admin&quot;],&quot;role&quot;:[0,&quot;admin&quot;],&quot;data-astro-cid-gfcipxte&quot;:[0,true]}" ssr client="load" before-hydration-url="/@id/astro:scripts/before-hydration.js" opts="{&quot;name&quot;:&quot;Navbar&quot;,&quot;value&quot;:true}" server-render-time="8.91039999993518" await-children><header class="navbar-mobile"><button type="button" class="navbar-mobile__toggle" aria-expanded="false" aria-controls="app-sidebar" aria-label="Abrir menú"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu" aria-hidden="true"><path d="M4 5h16"></path><path d="M4 12h16"></path><path d="M4 19h16"></path></svg></button><a href="/panel" class="navbar-mobile__brand"><img src="/brand/logo.png" alt="Demo Sistema Restaurantes" width="32" height="32"/><span>FK</span></a></header><button type="button" class="navbar-backdrop" aria-hidden="true" tabindex="-1" aria-label="Cerrar menú"></button><aside id="app-sidebar" class="navbar" aria-label="Navegación principal"><div class="navbar__header"><a href="/panel" class="navbar__brand"><img src="/brand/logo.png" alt="" width="36" height="36" aria-hidden="true"/><div class="navbar__brand-text"><span class="navbar__brand-name">Demo Sistema Restaurantes</span><span class="navbar__brand-tagline">Soluciones reales a ideas complejas</span></div></a><button type="button" class="navbar__close" aria-label="Cerrar menú"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button></div><nav class="navbar__nav"><div class="navbar__section"><ul class="navbar__list"><li><a href="/panel" class="navbar__link navbar__link--active" aria-current="page" title="Vista general de mesas, domicilios y comandas del local."><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-dashboard" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg><span class="navbar__link-text"><span class="navbar__link-label">Panel Principal</span><span class="navbar__link-desc">Vista general de mesas, domicilios y comandas del local.</span></span></a></li></ul></div><div class="navbar__section"><p class="navbar__section-label">Comandas</p><ul class="navbar__list"><li><a href="/panel/mesas" class="navbar__link" title="Gestiona el estado de las mesas del local."><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-utensils-crossed" aria-hidden="true"><path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8"></path><path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7"></path><path d="m2.1 21.8 6.4-6.3"></path><path d="m19 5-7 7"></path></svg><span class="navbar__link-text"><span class="navbar__link-label">Mesas</span></span></a></li><li><a href="/panel/domicilios" class="navbar__link" title="Crea y gestiona pedidos a domicilio."><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bike" aria-hidden="true"><circle cx="18.5" cy="17.5" r="3.5"></circle><circle cx="5.5" cy="17.5" r="3.5"></circle><circle cx="15" cy="5" r="1"></circle><path d="M12 17.5V14l-3-3 4-3 2 3h2"></path></svg><span class="navbar__link-text"><span class="navbar__link-label">Domicilios</span></span></a></li><li><a href="/panel/comandas" class="navbar__link" title="Crea y revisa pedidos en curso."><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clipboard-list" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 11h.01"></path><path d="M8 16h.01"></path></svg><span class="navbar__link-text"><span class="navbar__link-label">Comandas</span></span></a></li></ul></div><div class="navbar__section navbar__section--divided"><ul class="navbar__list"><li><a href="/panel/cocina" class="navbar__link" title="Pedidos pendientes de preparación."><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chef-hat" aria-hidden="true"><path d="M17 21a1 1 0 0 0 1-1v-5.35c0-.457.316-.844.727-1.041a4 4 0 0 0-2.134-7.589 5 5 0 0 0-9.186 0 4 4 0 0 0-2.134 7.588c.411.198.727.585.727 1.041V20a1 1 0 0 0 1 1Z"></path><path d="M6 17h12"></path></svg><span class="navbar__link-text"><span class="navbar__link-label">Cocina</span><span class="navbar__link-desc">Pedidos pendientes de preparación.</span></span></a></li></ul></div><div class="navbar__section navbar__section--divided"><p class="navbar__section-label">Facturación</p><ul class="navbar__list"><li><a href="/panel/caja" class="navbar__link" title="Abre y cierra la caja, factura y cobra pedidos."><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-receipt" aria-hidden="true"><path d="M12 17V7"></path><path d="M16 8h-6a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H8"></path><path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z"></path></svg><span class="navbar__link-text"><span class="navbar__link-label">Caja</span></span></a></li><li><a href="/panel/facturas" class="navbar__link" title="Consulta el historial de facturas emitidas."><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-receipt" aria-hidden="true"><path d="M12 17V7"></path><path d="M16 8h-6a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H8"></path><path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z"></path></svg><span class="navbar__link-text"><span class="navbar__link-label">Facturas</span></span></a></li></ul></div><div class="navbar__section navbar__section--divided"><p class="navbar__section-label">Productos</p><ul class="navbar__list"><li><a href="/panel/productos" class="navbar__link" title="Menú del local: entradas, clásicas, combos, bebidas y más."><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-bag" aria-hidden="true"><path d="M16 10a4 4 0 0 1-8 0"></path><path d="M3.103 6.034h17.794"></path><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z"></path></svg><span class="navbar__link-text"><span class="navbar__link-label">Catálogo</span></span></a></li><li><a href="/panel/inventario" class="navbar__link" title="Insumos con control manual: cajas, bolsas, unidades."><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-warehouse" aria-hidden="true"><path d="M18 21V10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1v11"></path><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 1.132-1.803l7.95-3.974a2 2 0 0 1 1.837 0l7.948 3.974A2 2 0 0 1 22 8z"></path><path d="M6 13h12"></path><path d="M6 17h12"></path></svg><span class="navbar__link-text"><span class="navbar__link-label">Inventario</span></span></a></li></ul></div><div class="navbar__section navbar__section--divided"><ul class="navbar__list"><li><a href="/panel/flujo" class="navbar__link"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left-right" aria-hidden="true"><path d="M8 3 4 7l4 4"></path><path d="M4 7h16"></path><path d="m16 21 4-4-4-4"></path><path d="M20 17H4"></path></svg><span class="navbar__link-text"><span class="navbar__link-label">Flujo de caja</span></span></a></li></ul></div><div class="navbar__section"><ul class="navbar__list"><li><a href="/panel/reportes" class="navbar__link"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chart-line" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16"></path><path d="m19 9-5 5-4-4-3 3"></path></svg><span class="navbar__link-text"><span class="navbar__link-label">Reportes</span></span></a></li></ul></div><div class="navbar__section navbar__section--divided"><p class="navbar__section-label">Configuración</p><ul class="navbar__list"><li><a href="/panel/usuarios" class="navbar__link" title="Gestiona cuentas y roles del personal."><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><path d="M16 3.128a4 4 0 0 1 0 7.744"></path><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><circle cx="9" cy="7" r="4"></circle></svg><span class="navbar__link-text"><span class="navbar__link-label">Usuarios</span></span></a></li><li><a href="/panel/tasas" class="navbar__link" title="Configura las tasas de cambio del sistema."><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-coins" aria-hidden="true"><path d="M13.744 17.736a6 6 0 1 1-7.48-7.48"></path><path d="M15 6h1v4"></path><path d="m6.134 14.768.866-.5 2 3.464"></path><circle cx="16" cy="8" r="6"></circle></svg><span class="navbar__link-text"><span class="navbar__link-label">Tasas de cambio</span></span></a></li></ul></div></nav><div class="navbar__footer"><div class="navbar__user"><span class="navbar__avatar" aria-hidden="true">A</span><div class="navbar__user-info"><span class="navbar__username">admin</span><span class="navbar__role">Administrador</span></div></div><form class="navbar__logout-form" action="/api/auth/logout" method="post"><button type="submit" class="navbar__logout"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-log-out" aria-hidden="true"><path d="m16 17 5-5-5-5"></path><path d="M21 12H9"></path><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path></svg><span>Cerrar sesión</span></button></form></div></aside><!--astro:end--></astro-island><div class="panel-layout__content" data-astro-cid-gfcipxte><main class="panel-layout__main" data-astro-cid-gfcipxte><div class="dashboard" data-astro-cid-a6lx4cag><header class="dashboard__header" data-astro-cid-a6lx4cag><p class="dashboard__eyebrow" data-astro-cid-a6lx4cag>Panel de control</p><h1 class="dashboard__title" data-astro-cid-a6lx4cag>Bienvenido, admin</h1></header><section class="dashboard__section" aria-label="Estado de mesas" data-astro-cid-a6lx4cag><astro-island uid="2vuPND" prefix="r3" component-url="/src/components/tables/TablesManager.tsx" component-export="default" renderer-url="/node_modules/.pnpm/@astrojs+react@6.0.1_@types_1a4daf47086d570b75df784fb186f116/node_modules/@astrojs/react/dist/client.js" props="{&quot;isAdmin&quot;:[0,true],&quot;variant&quot;:[0,&quot;dashboard&quot;],&quot;data-astro-cid-a6lx4cag&quot;:[0,true]}" ssr client="load" before-hydration-url="/@id/astro:scripts/before-hydration.js" opts="{&quot;name&quot;:&quot;TablesManager&quot;,&quot;value&quot;:true}" server-render-time="12.5718999998644" await-children><div class="tables-manager"><div class="tables-manager__toolbar"><div class="tables-manager__legend" aria-label="Estados de mesa"><span class="tables-manager__legend-item"><span class="tables-manager__legend-dot tables-manager__legend-dot--libre"></span>Libre<!-- --> (<!-- -->0<!-- -->)</span><span class="tables-manager__legend-item"><span class="tables-manager__legend-dot tables-manager__legend-dot--ocupada"></span>Ocupada<!-- --> (<!-- -->0<!-- -->)</span><span class="tables-manager__legend-item"><span class="tables-manager__legend-dot tables-manager__legend-dot--limpieza"></span>Por limpiar<!-- --> (<!-- -->0<!-- -->)</span></div><div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap"><div class="tables-manager__summary"><span class="tables-manager__summary-value">0</span><div class="tables-manager__summary-copy"><span class="tables-manager__summary-label">Mesas</span><span class="tables-manager__summary-total">en el local</span></div></div><a href="/panel/mesas" class="tables-manager__btn tables-manager__btn--ghost">Administrar mesas</a></div></div><div class="ui-skeleton-grid" aria-hidden="true"><div class="ui-skeleton ui-skeleton-card"></div><div class="ui-skeleton ui-skeleton-card"></div><div class="ui-skeleton ui-skeleton-card"></div><div class="ui-skeleton ui-skeleton-card"></div><div class="ui-skeleton ui-skeleton-card"></div><div class="ui-skeleton ui-skeleton-card"></div><div class="ui-skeleton ui-skeleton-card"></div><div class="ui-skeleton ui-skeleton-card"></div></div></div><div class="ui-toast-container" aria-live="polite" aria-atomic="true"></div><!--astro:end--></astro-island></section><section class="dashboard__section" aria-label="Domicilios activos" data-astro-cid-a6lx4cag><astro-island uid="Zk9chP" prefix="r4" component-url="/src/components/delivery/DeliveryManager.tsx" component-export="default" renderer-url="/node_modules/.pnpm/@astrojs+react@6.0.1_@types_1a4daf47086d570b75df784fb186f116/node_modules/@astrojs/react/dist/client.js" props="{&quot;variant&quot;:[0,&quot;dashboard&quot;],&quot;data-astro-cid-a6lx4cag&quot;:[0,true]}" ssr client="load" before-hydration-url="/@id/astro:scripts/before-hydration.js" opts="{&quot;name&quot;:&quot;DeliveryManager&quot;,&quot;value&quot;:true}" server-render-time="12.700200000079349" await-children><div class="delivery-manager"><div class="delivery-manager__toolbar"><div class="delivery-manager__filters" aria-label="Filtrar por estado"><button type="button" class="delivery-manager__filter delivery-manager__filter--active">Todos</button><button type="button" class="delivery-manager__filter ">Pendiente</button><button type="button" class="delivery-manager__filter ">Pagado</button><button type="button" class="delivery-manager__filter ">En cocina</button></div><div class="delivery-manager__actions"><div class="delivery-manager__summary"><span class="delivery-manager__summary-value">0</span><span class="delivery-manager__summary-label">domicilios</span></div><button type="button" class="delivery-manager__btn delivery-manager__btn--primary"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>Nuevo domicilio</button><a href="/panel/domicilios" class="delivery-manager__btn delivery-manager__btn--ghost">Ver todos</a></div></div><div class="ui-skeleton-grid" aria-hidden="true"><div class="ui-skeleton ui-skeleton-card"></div><div class="ui-skeleton ui-skeleton-card"></div><div class="ui-skeleton ui-skeleton-card"></div><div class="ui-skeleton ui-skeleton-card"></div><div class="ui-skeleton ui-skeleton-card"></div><div class="ui-skeleton ui-skeleton-card"></div></div></div><div class="ui-toast-container" aria-live="polite" aria-atomic="true"></div><!--astro:end--></astro-island></section></div></main></div></div></body></html>

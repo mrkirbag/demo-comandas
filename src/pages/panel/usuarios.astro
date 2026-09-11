@@ -16,7 +16,7 @@ if (session.role !== 'admin') {
       <h1 class="users-page__title">Usuarios</h1>
     </header>
 
-    <UsersManager client:load currentUserId={session.userId} />
+    <UsersManager client:only="react" currentUserId={session.userId} />
   </div>
 </PanelLayout>
 

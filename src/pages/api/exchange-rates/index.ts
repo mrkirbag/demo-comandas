@@ -15,13 +15,11 @@ function parseRate(value: unknown, label: string): number | null {
   return rate;
 }
 
-export const GET: APIRoute = async (context) => {
-  const auth = requireRoles(context, READ_ROLES);
-  if (auth instanceof Response) return auth;
-
+export const GET: APIRoute = async () => {
   const rates = await getExchangeRates();
   return Response.json({ rates });
 };
+
 
 export const PATCH: APIRoute = async (context) => {
   const session = requireAdmin(context);

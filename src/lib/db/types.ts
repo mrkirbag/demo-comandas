@@ -22,10 +22,14 @@ export type Product = {
   name: string;
   price: number;
   category: string;
+  image_url?: string | null;
+  description?: string | null;
   requires_inventory: boolean;
   active: boolean;
   inventory_product_id?: string | null;
   inventory_units_per_sale?: number;
+  stock?: number | null;
+  has_inventory?: boolean;
 };
 
 export type Inventory = {
@@ -44,6 +48,7 @@ export type InventoryMovement = {
   quantity: number;
   reason: string | null;
   user_id: string;
+  order_id?: string | null;
   created_at: string;
 };
 
@@ -93,7 +98,7 @@ export type ExchangeRates = {
   updated_by: string | null;
 };
 
-export type OrderType = 'mesa' | 'delivery';
+export type OrderType = 'mesa' | 'delivery' | 'para_llevar';
 
 export type DeliveryPaymentTiming = 'on_delivery' | 'prepaid';
 
@@ -113,6 +118,7 @@ export type Order = {
   customer_phone: string | null;
   delivery_address: string | null;
   delivery_notes: string | null;
+  delivery_fee: number;
   created_at: string;
   updated_at: string;
 };

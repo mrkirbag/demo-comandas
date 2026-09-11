@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { Loader2, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
+import { Loader2, Pencil, Plus, Search, Trash2, X, Image as ImageIcon, Upload, XCircle } from 'lucide-react';
 
 import { brand } from '@/data/brand';
 import {
@@ -28,6 +28,8 @@ type ProductFormState = {
   name: string;
   price: string;
   category: string;
+  image_url: string;
+  description: string;
   active: boolean;
   inventory_product_id: string;
   inventory_units_per_sale: string;
@@ -37,6 +39,8 @@ const emptyForm: ProductFormState = {
   name: '',
   price: '',
   category: menuCategories[0]?.id ?? 'entradas',
+  image_url: '',
+  description: '',
   active: true,
   inventory_product_id: '',
   inventory_units_per_sale: '1',
@@ -60,14 +64,11 @@ function ProductsManager() {
   const [formMode, setFormMode] = useState<FormMode | null>(null);
   const [editingProduct, setEditingProduct] = useState<CatalogProduct | null>(null);
   const [form, setForm] = useState<ProductFormState>(emptyForm);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const drinkInventoryItems = useMemo(
-    () => inventoryItems.filter((item) => item.category === 'bebidas'),
-    [inventoryItems],
-  );
 
   const filteredProducts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -141,6 +142,8 @@ function ProductsManager() {
       name: product.name,
       price: String(product.price),
       category: product.category,
+      image_url: product.image_url ?? '',
+      description: product.description ?? '',
       active: product.active,
       inventory_product_id: product.inventory_product_id ?? '',
       inventory_units_per_sale: String(product.inventory_units_per_sale ?? 1),
@@ -155,20 +158,46 @@ function ProductsManager() {
     setFormError('');
   }
 
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    setFormError('');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const res = await fetch('/api/images', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error(await parseError(res));
+      }
+
+      const data = await res.json();
+      setForm((prev) => ({ ...prev, image_url: data.url }));
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Error al subir la imagen');
+    } finally {
+      setIsUploadingImage(false);
+      e.target.value = '';
+    }
+  }
+
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError('');
     const price = Number(form.price);
-    const inventoryBody =
-      form.category === 'bebidas'
-        ? {
-            inventory_product_id: form.inventory_product_id || null,
-            inventory_units_per_sale: Number(form.inventory_units_per_sale) || 1,
-          }
-        : {
-            inventory_product_id: null,
-            inventory_units_per_sale: 1,
-          };
+    const inventoryBody = {
+      inventory_product_id: form.inventory_product_id || null,
+      inventory_units_per_sale: form.inventory_product_id
+        ? Math.max(1, Number(form.inventory_units_per_sale) || 1)
+        : 1,
+    };
 
     if (formMode === 'create') {
       saveMutation.mutate({
@@ -177,6 +206,8 @@ function ProductsManager() {
           name: form.name,
           price,
           category: form.category,
+          image_url: form.image_url || null,
+          description: form.description || null,
           ...inventoryBody,
         },
       });
@@ -190,6 +221,8 @@ function ProductsManager() {
           name: form.name,
           price,
           category: form.category,
+          image_url: form.image_url || null,
+          description: form.description || null,
           active: form.active,
           ...inventoryBody,
         },
@@ -299,15 +332,27 @@ function ProductsManager() {
               {filteredProducts.map((product) => (
                 <tr key={product.id}>
                   <td data-label="Producto">
-                    <span className="catalog-manager__name">{product.name}</span>
-                    {product.category === 'bebidas' && product.inventory_item_name && (
-                      <span className="catalog-manager__inventory-link">
-                        Inventario: {product.inventory_item_name}
-                        {product.inventory_units_per_sale > 1
-                          ? ` (×${product.inventory_units_per_sale})`
-                          : ''}
-                      </span>
-                    )}
+                    <div className="catalog-manager__product-info">
+                      {product.image_url ? (
+                        <img src={product.image_url} alt="" className="catalog-manager__thumbnail" loading="lazy" />
+                      ) : (
+                        <div className="catalog-manager__thumbnail-placeholder">
+                          <ImageIcon size={20} />
+                        </div>
+                      )}
+                      <div>
+                        <span className="catalog-manager__name">{product.name}</span>
+                        {product.description && <span className="catalog-manager__description-text">{product.description}</span>}
+                        {product.inventory_item_name && (
+                          <span className="catalog-manager__inventory-link">
+                            Inventario: {product.inventory_item_name}
+                            {product.inventory_units_per_sale > 1
+                              ? ` (×${product.inventory_units_per_sale})`
+                              : ''}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </td>
                   <td data-label="Categoría">
                     <span className="catalog-manager__badge">
@@ -383,7 +428,57 @@ function ProductsManager() {
               placeholder="Ej. Hamburguesa clásica"
               required
               minLength={2}
-              disabled={saveMutation.isPending}
+              disabled={saveMutation.isPending || isUploadingImage}
+            />
+          </div>
+
+          <div className="catalog-manager__field">
+            <label>Imagen</label>
+            <div className="catalog-manager__image-upload">
+              {form.image_url ? (
+                <div className="catalog-manager__image-preview">
+                  <img src={form.image_url} alt="Vista previa" />
+                  <button 
+                    type="button" 
+                    className="catalog-manager__image-clear"
+                    onClick={() => setForm(prev => ({ ...prev, image_url: '' }))}
+                    title="Eliminar imagen"
+                  >
+                    <XCircle size={20} />
+                  </button>
+                </div>
+              ) : (
+                <label className="catalog-manager__image-dropzone">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={isUploadingImage || saveMutation.isPending}
+                    className="catalog-manager__image-input"
+                  />
+                  {isUploadingImage ? (
+                    <Loader2 size={24} className="catalog-manager__spinner" />
+                  ) : (
+                    <>
+                      <Upload size={24} />
+                      <span>Subir foto (Max. 10MB)</span>
+                    </>
+                  )}
+                </label>
+              )}
+            </div>
+          </div>
+
+          <div className="catalog-manager__field">
+            <label htmlFor="product-description">Descripción</label>
+            <textarea
+              id="product-description"
+              value={form.description}
+              onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
+              placeholder="Ej. Deliciosa hamburguesa con queso cheddar..."
+              rows={2}
+              disabled={saveMutation.isPending || isUploadingImage}
+              className="catalog-manager__textarea"
             />
           </div>
 
@@ -411,8 +506,6 @@ function ProductsManager() {
                 setForm((prev) => ({
                   ...prev,
                   category: event.target.value,
-                  inventory_product_id:
-                    event.target.value === 'bebidas' ? prev.inventory_product_id : '',
                 }))
               }
               disabled={saveMutation.isPending}
@@ -425,48 +518,70 @@ function ProductsManager() {
             </select>
           </div>
 
-          {form.category === 'bebidas' && (
-            <>
-              <div className="catalog-manager__field">
-                <label htmlFor="product-inventory">Ítem de inventario</label>
-                <select
-                  id="product-inventory"
-                  value={form.inventory_product_id}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, inventory_product_id: event.target.value }))
-                  }
-                  disabled={saveMutation.isPending}
-                >
-                  <option value="">Sin vínculo (no descuenta stock)</option>
-                  {drinkInventoryItems.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name} — {item.stock} {getInventoryUnitLabel(item.unit).toLowerCase()} (
-                      {getInventoryCategoryLabel(item.category)})
-                    </option>
-                  ))}
-                </select>
-              </div>
+          <div className="catalog-manager__field">
+            <label htmlFor="product-inventory">
+              Ítem de inventario <span className="catalog-manager__hint">(opcional)</span>
+            </label>
+            <select
+              id="product-inventory"
+              value={form.inventory_product_id}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, inventory_product_id: event.target.value }))
+              }
+              disabled={saveMutation.isPending}
+            >
+              <option value="">Sin vínculo (no descuenta stock)</option>
+              {menuCategories.map((cat) => {
+                const catItems = inventoryItems.filter((item) => item.category === cat.id);
+                if (catItems.length === 0) return null;
+                return (
+                  <optgroup key={cat.id} label={cat.label}>
+                    {catItems.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name} — {item.stock} {getInventoryUnitLabel(item.unit).toLowerCase()}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
+              {(() => {
+                const knownCategoryIds = new Set(menuCategories.map((c) => c.id));
+                const otherItems = inventoryItems.filter(
+                  (item) => !knownCategoryIds.has(item.category),
+                );
+                if (otherItems.length === 0) return null;
+                return (
+                  <optgroup label="Otros insumos">
+                    {otherItems.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name} — {item.stock} {getInventoryUnitLabel(item.unit).toLowerCase()} (
+                        {getInventoryCategoryLabel(item.category)})
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })()}
+            </select>
+          </div>
 
-              {form.inventory_product_id && (
-                <div className="catalog-manager__field">
-                  <label htmlFor="product-inventory-units">Unidades de inventario por venta</label>
-                  <input
-                    id="product-inventory-units"
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={form.inventory_units_per_sale}
-                    onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        inventory_units_per_sale: event.target.value,
-                      }))
-                    }
-                    disabled={saveMutation.isPending}
-                  />
-                </div>
-              )}
-            </>
+          {form.inventory_product_id && (
+            <div className="catalog-manager__field">
+              <label htmlFor="product-inventory-units">Unidades de inventario por venta</label>
+              <input
+                id="product-inventory-units"
+                type="number"
+                min="1"
+                step="1"
+                value={form.inventory_units_per_sale}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    inventory_units_per_sale: event.target.value,
+                  }))
+                }
+                disabled={saveMutation.isPending}
+              />
+            </div>
           )}
 
           {formMode === 'edit' && (
@@ -486,11 +601,11 @@ function ProductsManager() {
               type="button"
               className="catalog-manager__cancel"
               onClick={closeForm}
-              disabled={saveMutation.isPending}
+              disabled={saveMutation.isPending || isUploadingImage}
             >
               Cancelar
             </button>
-            <button type="submit" className="catalog-manager__submit" disabled={saveMutation.isPending}>
+            <button type="submit" className="catalog-manager__submit" disabled={saveMutation.isPending || isUploadingImage}>
               {saveMutation.isPending ? (
                 <>
                   <Loader2 size={16} className="catalog-manager__spinner" />

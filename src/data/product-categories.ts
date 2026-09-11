@@ -1,20 +1,18 @@
-export type MenuCategory = {
+export type ProductCategory = {
   id: string;
   label: string;
 };
 
-export type InventoryCategory = {
-  id: string;
-  label: string;
-};
+export type MenuCategory = ProductCategory;
+export type InventoryCategory = ProductCategory;
 
 export type InventoryUnit = {
   id: string;
   label: string;
 };
 
-/** Categorías del menú para comandas. */
-export const menuCategories: MenuCategory[] = [
+/** Categorías unificadas de productos (catálogo, menú e inventario). */
+export const productCategories: ProductCategory[] = [
   { id: 'entradas', label: 'Entradas' },
   { id: 'perros-calientes', label: 'Perros Calientes' },
   { id: 'hamburguesas', label: 'Hamburguesas' },
@@ -22,13 +20,11 @@ export const menuCategories: MenuCategory[] = [
   { id: 'bebidas', label: 'Bebidas' },
 ];
 
-/** Categorías de insumos controlados en inventario. */
-export const inventoryCategories: InventoryCategory[] = [
-  { id: 'bebidas', label: 'Bebidas' },
-  { id: 'panaderia', label: 'Panadería' },
-  { id: 'insumos', label: 'Insumos' },
-  { id: 'empaques', label: 'Empaques' },
-];
+/** Categorías del menú para comandas y catálogo. */
+export const menuCategories: MenuCategory[] = productCategories;
+
+/** Categorías de insumos controlados en inventario (mismas que catálogo). */
+export const inventoryCategories: InventoryCategory[] = productCategories;
 
 export const inventoryUnits: InventoryUnit[] = [
   { id: 'cajas', label: 'Cajas' },
@@ -38,12 +34,22 @@ export const inventoryUnits: InventoryUnit[] = [
   { id: 'litros', label: 'Litros' },
 ];
 
+const LEGACY_INVENTORY_CATEGORY_LABELS: Record<string, string> = {
+  panaderia: 'Panadería',
+  insumos: 'Insumos',
+  empaques: 'Empaques',
+};
+
 export function getMenuCategoryLabel(id: string): string {
   return menuCategories.find((c) => c.id === id)?.label ?? id;
 }
 
 export function getInventoryCategoryLabel(id: string): string {
-  return inventoryCategories.find((c) => c.id === id)?.label ?? id;
+  return (
+    inventoryCategories.find((c) => c.id === id)?.label ??
+    LEGACY_INVENTORY_CATEGORY_LABELS[id] ??
+    id
+  );
 }
 
 export function getInventoryUnitLabel(id: string): string {
@@ -55,7 +61,10 @@ export function isValidMenuCategory(id: string): boolean {
 }
 
 export function isValidInventoryCategory(id: string): boolean {
-  return inventoryCategories.some((c) => c.id === id);
+  return (
+    inventoryCategories.some((c) => c.id === id) ||
+    id in LEGACY_INVENTORY_CATEGORY_LABELS
+  );
 }
 
 export function isValidInventoryUnit(id: string): boolean {

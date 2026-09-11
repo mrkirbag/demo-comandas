@@ -12,6 +12,7 @@ export default defineConfig({
       TURSO_URL: envField.string({ context: 'server', access: 'secret' }),
       TURSO_AUTH_TOKEN: envField.string({ context: 'server', access: 'secret' }),
       JWT_SECRET: envField.string({ context: 'server', access: 'secret' }),
+      UPLOADTHING_TOKEN: envField.string({ context: 'server', access: 'secret' }),
     },
   },
   devToolbar: {

@@ -22,6 +22,7 @@ export function useTables() {
   return {
     tables: query.data ?? [],
     isLoading: query.isLoading,
+    isPending: query.isPending,
     isFetching: query.isFetching,
     dataUpdatedAt: query.dataUpdatedAt,
     error: query.error,

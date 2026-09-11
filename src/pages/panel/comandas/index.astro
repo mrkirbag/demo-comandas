@@ -10,7 +10,7 @@ import PanelLayout from '@/layouts/PanelLayout.astro';
       <h1 class="panel-page__title">Pedidos en curso</h1>
     </header>
 
-    <OrdersList client:load />
+    <OrdersList client:only="react" />
   </div>
 </PanelLayout>
 

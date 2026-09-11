@@ -23,7 +23,7 @@ const canDeliver =
       <h1 class="panel-page__title">Toma de pedido</h1>
     </header>
 
-    <OrderView client:load orderId={id} canDeliver={canDeliver} />
+    <OrderView client:only="react" orderId={id} canDeliver={canDeliver} />
   </div>
 </PanelLayout>
 

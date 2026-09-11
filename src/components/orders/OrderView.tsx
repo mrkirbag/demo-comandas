@@ -1,9 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
+  Bike,
   CheckCircle2,
   ChefHat,
+  ChevronDown,
+  ChevronUp,
   Loader2,
   Minus,
   Plus,
@@ -11,6 +14,7 @@ import {
   Receipt,
   MessageCircle,
   Search,
+  ShoppingBag,
   Trash2,
   X,
   XCircle,
@@ -22,6 +26,7 @@ import KitchenTicketModal from '@/components/orders/KitchenTicketModal';
 import SaleTicketModal from '@/components/tickets/SaleTicketModal';
 import { Alert, Spinner } from '@/components/ui/Feedback';
 import Modal from '@/components/ui/Modal';
+import { useModalBodyLock } from '@/lib/ui/modal-utils';
 import { isDeliveryReadyForDispatch, openDeliveryReadyWhatsApp } from '@/lib/delivery/whatsapp';
 import type { OrderItemWithProduct } from '@/lib/db/orders';
 import type { Product } from '@/lib/db/types';
@@ -104,7 +109,26 @@ function OrderView({ orderId, canDeliver = false }: OrderViewProps) {
   const [kitchenTicketSentAt, setKitchenTicketSentAt] = useState<string | null>(null);
   const [saleTicketOpen, setSaleTicketOpen] = useState(false);
 
+  const [showFeeModal, setShowFeeModal] = useState(false);
+  const [feeInputValue, setFeeInputValue] = useState('');
+
+  const [isMobileTicketOpen, setIsMobileTicketOpen] = useState(false);
+  const [fabPulsing, setFabPulsing] = useState(false);
+
   const isEditable = data?.order.status === 'pendiente';
+
+  useModalBodyLock(isMobileTicketOpen);
+
+  useEffect(() => {
+    if (!isMobileTicketOpen) return;
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsMobileTicketOpen(false);
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileTicketOpen]);
 
   const adicionalProducts = useMemo(
     () => products.filter((product) => product.category === ADICIONALES_CATEGORY),
@@ -133,6 +157,7 @@ function OrderView({ orderId, canDeliver = false }: OrderViewProps) {
     void queryClient.invalidateQueries({ queryKey: queryKeys.tables });
     void queryClient.invalidateQueries({ queryKey: queryKeys.kitchenOrders });
     void queryClient.invalidateQueries({ queryKey: queryKeys.cashRegister });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.menuProducts });
   };
 
   const addItemMutation = useMutation({
@@ -157,6 +182,8 @@ function OrderView({ orderId, canDeliver = false }: OrderViewProps) {
     onSuccess: () => {
       invalidateOrder();
       setAddForm(null);
+      setFabPulsing(true);
+      setTimeout(() => setFabPulsing(false), 600);
     },
     onError: (err) => setActionError(err instanceof Error ? err.message : 'No se pudo agregar el producto'),
     onSettled: () => setActingAction(null),
@@ -287,14 +314,46 @@ function OrderView({ orderId, canDeliver = false }: OrderViewProps) {
     },
   });
 
+  const updateFeeMutation = useMutation({
+    mutationFn: async (fee: number) => {
+      const response = await fetch(`/api/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ delivery_fee: fee }),
+      });
+      if (!response.ok) throw new Error(await parseError(response));
+      return response.json();
+    },
+    onSuccess: () => {
+      invalidateOrder();
+      setShowFeeModal(false);
+    },
+    onError: (err) => {
+      setActionError(err instanceof Error ? err.message : 'No se pudo actualizar el costo de delivery');
+    },
+  });
+
   function handleAddItem(event: React.FormEvent) {
     event.preventDefault();
     if (!addForm) return;
 
     const quantity = Number(addForm.quantity);
     if (!Number.isInteger(quantity) || quantity < 1) {
-      setActionError('Cantidad inválida');
+      setActionError('La cantidad debe ser un número entero mayor a 0');
       return;
+    }
+
+    if (addForm.product.has_inventory && addForm.product.stock !== null && addForm.product.stock !== undefined) {
+      if (addForm.product.stock <= 0) {
+        setActionError(`El producto "${addForm.product.name}" no tiene stock disponible en inventario`);
+        return;
+      }
+      if (quantity > addForm.product.stock) {
+        setActionError(
+          `No se pueden escoger más unidades de las disponibles en inventario (disponibles: ${addForm.product.stock})`
+        );
+        return;
+      }
     }
 
     const modifierGroups = getApplicableModifierGroups(addForm.product.category);
@@ -319,6 +378,19 @@ function OrderView({ orderId, canDeliver = false }: OrderViewProps) {
   function updateItemQuantity(item: OrderItemWithProduct, delta: number) {
     const nextQuantity = item.quantity + delta;
     if (nextQuantity < 1) return;
+
+    if (delta > 0) {
+      const product = products.find((p) => p.id === item.product_id);
+      if (product?.has_inventory && product.stock !== null && product.stock !== undefined) {
+        if (product.stock < delta) {
+          setActionError(
+            `No hay más unidades en inventario para ${item.product_name} (disponibles: ${product.stock})`
+          );
+          return;
+        }
+      }
+    }
+
     updateQtyMutation.mutate({ itemId: item.id, quantity: nextQuantity });
   }
 
@@ -339,6 +411,7 @@ function OrderView({ orderId, canDeliver = false }: OrderViewProps) {
   }
 
   const { order, items, table, payments = [] } = data;
+  const totalItemCount = items.reduce((acc, item) => acc + item.quantity, 0);
   const showSendToKitchen = canSendOrderToKitchen(order);
   const showPayLink = canPayOrder(order) && items.length > 0;
   const showDeliverButton = canDeliver && canMarkOrderDelivered(order);
@@ -348,6 +421,7 @@ function OrderView({ orderId, canDeliver = false }: OrderViewProps) {
   const isDelivering = actingAction === 'deliver';
   const isMarkingReady = actingAction === 'mark-ready';
   const isAddingItem = actingAction === 'add-item';
+  const isUnpaid = order.status !== 'pagado' && order.status !== 'entregado' && order.status !== 'cancelado';
 
   return (
     <div className="order-view">
@@ -377,17 +451,55 @@ function OrderView({ orderId, canDeliver = false }: OrderViewProps) {
 
       {displayError && data && <Alert className="order-view__alert">{displayError}</Alert>}
 
-      {order.order_type === 'delivery' && (
+      {(order.order_type === 'delivery' || order.order_type === 'para_llevar') && (
         <div className="order-view__delivery-info">
           <p>
             <strong>{order.customer_name}</strong> · {order.customer_phone}
+            {order.order_type === 'para_llevar' && <span> · <strong>Para Llevar</strong></span>}
           </p>
-          <p>{order.delivery_address}</p>
+          {order.order_type === 'delivery' && order.delivery_address && (
+            <p>{order.delivery_address}</p>
+          )}
+          {order.order_type === 'delivery' && (
+            <div className="order-view__delivery-fee-row">
+              {order.delivery_fee > 0 ? (
+                <p style={{ margin: 0 }}>
+                  <strong>Costo de domicilio:</strong> {formatCop(order.delivery_fee)}
+                </p>
+              ) : (
+                <p style={{ margin: 0, color: '#f59e0b', fontWeight: 600 }}>
+                  ⚠️ Costo de domicilio: No asignado ($0)
+                </p>
+              )}
+              {isUnpaid && (
+                <button
+                  type="button"
+                  className="order-view__fee-edit-btn"
+                  onClick={() => {
+                    setFeeInputValue(order.delivery_fee > 0 ? String(order.delivery_fee) : '');
+                    setShowFeeModal(true);
+                  }}
+                >
+                  <Bike size={14} />
+                  {order.delivery_fee > 0 ? 'Modificar costo' : '+ Asignar costo de delivery'}
+                </button>
+              )}
+            </div>
+          )}
           {order.delivery_notes && <p className="order-view__delivery-notes">{order.delivery_notes}</p>}
           <p className="order-view__delivery-timing">
             {DELIVERY_PAYMENT_TIMING_LABELS[getDeliveryPaymentTiming(order)]}
           </p>
         </div>
+      )}
+
+      {/* Backdrop para sección retráctil en móvil */}
+      {isEditable && (
+        <div
+          className={`order-view__mobile-backdrop ${isMobileTicketOpen ? 'order-view__mobile-backdrop--open' : ''}`}
+          onClick={() => setIsMobileTicketOpen(false)}
+          aria-hidden="true"
+        />
       )}
 
       <div className={`order-view__layout ${!isEditable ? 'order-view__layout--readonly' : ''}`}>
@@ -429,39 +541,105 @@ function OrderView({ orderId, canDeliver = false }: OrderViewProps) {
               {filteredProducts.length === 0 ? (
                 <p className="order-view__empty-catalog">No hay productos en esta categoría.</p>
               ) : (
-                filteredProducts.map((product) => (
-                  <button
-                    key={product.id}
-                    type="button"
-                    className="order-view__product-card"
-                    onClick={() => {
-                      setAddForm({
-                        product,
-                        quantity: '1',
-                        selections: getDefaultSelections(product.category),
-                        adicionalIds: [],
-                      });
-                      setActionError('');
-                    }}
-                  >
-                    <span className="order-view__product-name">{product.name}</span>
-                    <span className="order-view__product-category">
-                      {getMenuCategoryLabel(product.category)}
-                    </span>
-                    <span className="order-view__product-price">
-                      <MultiCurrencyPrice amountCop={product.price} rates={rates} />
-                    </span>
-                  </button>
-                ))
+                filteredProducts.map((product) => {
+                  const isOutOfStock = Boolean(
+                    product.has_inventory &&
+                      product.stock !== null &&
+                      product.stock !== undefined &&
+                      product.stock <= 0,
+                  );
+
+                  return (
+                    <button
+                      key={product.id}
+                      type="button"
+                      className={`order-view__product-card${isOutOfStock ? ' order-view__product-card--out-of-stock' : ''}`}
+                      disabled={isOutOfStock}
+                      onClick={() => {
+                        if (isOutOfStock) {
+                          setActionError(`El producto "${product.name}" está agotado en inventario.`);
+                          return;
+                        }
+                        setAddForm({
+                          product,
+                          quantity: '1',
+                          selections: getDefaultSelections(product.category),
+                          adicionalIds: [],
+                        });
+                        setActionError('');
+                      }}
+                    >
+                      <span className="order-view__product-name">{product.name}</span>
+                      <span className="order-view__product-category">
+                        {getMenuCategoryLabel(product.category)}
+                      </span>
+                      {product.has_inventory &&
+                        product.stock !== null &&
+                        product.stock !== undefined && (
+                          <span
+                            className={`order-view__stock-badge${isOutOfStock ? ' order-view__stock-badge--empty' : ''}`}
+                          >
+                            {isOutOfStock ? 'Agotado' : `Stock: ${product.stock}`}
+                          </span>
+                        )}
+                      <span className="order-view__product-price">
+                        <MultiCurrencyPrice amountCop={product.price} rates={rates} />
+                      </span>
+                    </button>
+                  );
+                })
               )}
             </div>
           </section>
         )}
 
-        <section className="order-view__ticket" aria-label="Detalle de comanda">
+        <section
+          className={`order-view__ticket ${isEditable && isMobileTicketOpen ? 'order-view__ticket--mobile-open' : ''}`}
+          aria-label="Detalle de comanda"
+        >
+          {isEditable && (
+            <div className="order-view__ticket-mobile-handle-bar">
+              <div className="order-view__ticket-drag-pill" aria-hidden="true" />
+              <button
+                type="button"
+                className="order-view__ticket-mobile-close-btn"
+                onClick={() => setIsMobileTicketOpen(false)}
+                aria-label="Cerrar pedido"
+              >
+                <X size={15} />
+                <span>Cerrar</span>
+              </button>
+            </div>
+          )}
+
           <div className="order-view__ticket-header">
-            <h3>Detalle</h3>
-            <span>{table?.capacity ?? '—'} personas</span>
+            <div className="order-view__ticket-title-group">
+              <h3>Detalle</h3>
+              {totalItemCount > 0 && (
+                <span className="order-view__ticket-item-count">
+                  {totalItemCount} {totalItemCount === 1 ? 'ítem' : 'ítems'}
+                </span>
+              )}
+            </div>
+            <div className="order-view__ticket-header-meta">
+              <span>
+                {table?.capacity
+                  ? `${table.capacity} personas`
+                  : order.order_type === 'delivery'
+                    ? 'Domicilio'
+                    : 'Mesa'}
+              </span>
+              {isEditable && (
+                <button
+                  type="button"
+                  className="order-view__ticket-header-close-icon"
+                  onClick={() => setIsMobileTicketOpen(false)}
+                  aria-label="Cerrar detalle de pedido"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
           </div>
 
           {items.length === 0 ? (
@@ -474,6 +652,13 @@ function OrderView({ orderId, canDeliver = false }: OrderViewProps) {
                 const isItemActing = actingItemId === item.id;
                 const preferences = getItemPreferenceLabel(item);
                 const extras = item.extras ?? [];
+                const linkedProduct = products.find((p) => p.id === item.product_id);
+                const cannotIncrease = Boolean(
+                  linkedProduct?.has_inventory &&
+                    linkedProduct.stock !== null &&
+                    linkedProduct.stock !== undefined &&
+                    linkedProduct.stock <= 0,
+                );
 
                 return (
                   <li key={item.id} className="order-view__item">
@@ -525,8 +710,9 @@ function OrderView({ orderId, canDeliver = false }: OrderViewProps) {
                           <button
                             type="button"
                             onClick={() => updateItemQuantity(item, 1)}
-                            disabled={isItemActing}
+                            disabled={isItemActing || cannotIncrease}
                             aria-label="Aumentar cantidad"
+                            title={cannotIncrease ? 'No hay más stock disponible en inventario' : undefined}
                           >
                             {isItemActing ? (
                               <Loader2 className="order-view__spin" size={14} />
@@ -561,10 +747,55 @@ function OrderView({ orderId, canDeliver = false }: OrderViewProps) {
           )}
 
           <div className="order-view__footer">
+            {order.order_type === 'delivery' && order.delivery_fee === 0 && isUnpaid && (
+              <div className="order-view__fee-warning">
+                <span>⚠️ Costo de delivery: $0 (Sin definir)</span>
+                <button
+                  type="button"
+                  className="order-view__fee-warning-btn"
+                  onClick={() => {
+                    setFeeInputValue('');
+                    setShowFeeModal(true);
+                  }}
+                >
+                  + Asignar monto
+                </button>
+              </div>
+            )}
+
+            {order.delivery_fee > 0 && (
+              <>
+                <div className="order-view__total" style={{ fontSize: '0.9rem', opacity: 0.85, fontWeight: 500 }}>
+                  <span>Subtotal productos</span>
+                  <MultiCurrencyPrice amountCop={order.total - order.delivery_fee} rates={rates} align="right" />
+                </div>
+                <div className="order-view__total" style={{ fontSize: '0.9rem', opacity: 0.85, fontWeight: 500 }}>
+                  <span>Domicilio</span>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <MultiCurrencyPrice amountCop={order.delivery_fee} rates={rates} align="right" />
+                    {isUnpaid && (
+                      <button
+                        type="button"
+                        className="order-view__fee-mini-edit"
+                        onClick={() => {
+                          setFeeInputValue(String(order.delivery_fee));
+                          setShowFeeModal(true);
+                        }}
+                        title="Modificar costo de delivery"
+                      >
+                        Editar
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+
             <div className="order-view__total">
               <span>Total</span>
               <MultiCurrencyPrice amountCop={order.total} rates={rates} variant="total" align="right" />
             </div>
+
 
             {isEditable && (
               <>
@@ -592,6 +823,13 @@ function OrderView({ orderId, canDeliver = false }: OrderViewProps) {
                 >
                   <XCircle size={16} />
                   Cancelar comanda
+                </button>
+                <button
+                  type="button"
+                  className="order-view__mobile-keep-adding-btn"
+                  onClick={() => setIsMobileTicketOpen(false)}
+                >
+                  Seguir agregando productos
                 </button>
               </>
             )}
@@ -686,6 +924,47 @@ function OrderView({ orderId, canDeliver = false }: OrderViewProps) {
         </section>
       </div>
 
+      {/* Botón Flotante Móvil "Ver pedido" */}
+      {isEditable && (
+        <aside className="order-view__mobile-fab-container" aria-label="Acceso rápido al pedido">
+          <button
+            type="button"
+            className={`order-view__mobile-fab ${fabPulsing ? 'order-view__mobile-fab--pulse' : ''} ${isMobileTicketOpen ? 'order-view__mobile-fab--active' : ''}`}
+            onClick={() => setIsMobileTicketOpen((prev) => !prev)}
+            aria-expanded={isMobileTicketOpen}
+            aria-label={isMobileTicketOpen ? 'Ocultar pedido' : 'Ver pedido'}
+          >
+            <div className="order-view__mobile-fab-left">
+              <div className="order-view__mobile-fab-icon-wrap">
+                <ShoppingBag size={20} />
+                {totalItemCount > 0 && (
+                  <span className="order-view__mobile-fab-badge">{totalItemCount}</span>
+                )}
+              </div>
+              <div className="order-view__mobile-fab-info">
+                <span className="order-view__mobile-fab-label">
+                  {isMobileTicketOpen ? 'Ocultar pedido' : 'Ver pedido'}
+                </span>
+                <span className="order-view__mobile-fab-sub">
+                  {totalItemCount === 0
+                    ? '0 productos agregados'
+                    : `${totalItemCount} ${totalItemCount === 1 ? 'producto' : 'productos'}`}
+                </span>
+              </div>
+            </div>
+
+            <div className="order-view__mobile-fab-right">
+              <span className="order-view__mobile-fab-total">
+                {formatCop(order.total)}
+              </span>
+              <span className="order-view__mobile-fab-chevron" aria-hidden="true">
+                {isMobileTicketOpen ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+              </span>
+            </div>
+          </button>
+        </aside>
+      )}
+
       <Modal
         open={showCancelConfirm}
         onClose={() => setShowCancelConfirm(false)}
@@ -751,7 +1030,13 @@ function OrderView({ orderId, canDeliver = false }: OrderViewProps) {
               <input
                 type="number"
                 min={1}
-                max={99}
+                max={
+                  addForm.product.has_inventory &&
+                  addForm.product.stock !== null &&
+                  addForm.product.stock !== undefined
+                    ? addForm.product.stock
+                    : undefined
+                }
                 value={addForm.quantity}
                 onChange={(event) =>
                   setAddForm((prev) => (prev ? { ...prev, quantity: event.target.value } : prev))
@@ -759,6 +1044,22 @@ function OrderView({ orderId, canDeliver = false }: OrderViewProps) {
                 required
                 autoFocus
               />
+              {addForm.product.has_inventory &&
+                addForm.product.stock !== null &&
+                addForm.product.stock !== undefined && (
+                  <span className="order-view__field-hint">
+                    {addForm.product.stock <= 0 ? (
+                      <span style={{ color: '#ef4444', fontWeight: 600 }}>
+                        ⚠️ Producto sin stock en inventario
+                      </span>
+                    ) : (
+                      <span>
+                        Disponible en inventario: <strong>{addForm.product.stock}</strong>{' '}
+                        {addForm.product.stock === 1 ? 'unidad' : 'unidades'}
+                      </span>
+                    )}
+                  </span>
+                )}
             </label>
 
             {getApplicableModifierGroups(addForm.product.category).map((group) => {
@@ -847,7 +1148,19 @@ function OrderView({ orderId, canDeliver = false }: OrderViewProps) {
               >
                 Cancelar
               </button>
-              <button type="submit" className="order-view__btn" disabled={isAddingItem}>
+              <button
+                type="submit"
+                className="order-view__btn"
+                disabled={
+                  isAddingItem ||
+                  Boolean(
+                    addForm.product.has_inventory &&
+                      addForm.product.stock !== null &&
+                      addForm.product.stock !== undefined &&
+                      addForm.product.stock <= 0,
+                  )
+                }
+              >
                 {isAddingItem ? (
                   <Loader2 className="order-view__spin" size={16} />
                 ) : (
@@ -881,6 +1194,90 @@ function OrderView({ orderId, canDeliver = false }: OrderViewProps) {
           onClose={() => setSaleTicketOpen(false)}
         />
       )}
+
+      {/* Modal para cambiar costo de delivery */}
+      <Modal
+        open={showFeeModal}
+        onClose={() => setShowFeeModal(false)}
+        title="Costo de delivery"
+        panelClassName="order-view__fee-modal"
+      >
+        <form
+          className="order-view__fee-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const fee = Math.max(0, Number(feeInputValue) || 0);
+            updateFeeMutation.mutate(fee);
+          }}
+        >
+          <div className="order-view__fee-form-body">
+            <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+              Ingresa el valor del delivery para este pedido. El total de la comanda y el ticket se actualizarán automáticamente.
+            </p>
+
+            <label className="order-view__label">
+              Monto del domicilio (COP)
+              <input
+                type="number"
+                min="0"
+                step="500"
+                placeholder="Ej. 5000"
+                value={feeInputValue}
+                onChange={(e) => setFeeInputValue(e.target.value)}
+                className="order-view__input"
+                autoFocus
+                required
+              />
+            </label>
+
+            <div className="order-view__quick-chips">
+              {[3000, 4000, 5000, 6000, 8000, 10000].map((amt) => (
+                <button
+                  key={amt}
+                  type="button"
+                  className={`order-view__quick-chip ${feeInputValue === String(amt) ? 'order-view__quick-chip--active' : ''}`}
+                  onClick={() => setFeeInputValue(String(amt))}
+                >
+                  +{formatCop(amt)}
+                </button>
+              ))}
+            </div>
+
+            {order && (
+              <div className="order-view__fee-preview-box">
+                <span>Nuevo total a cobrar:</span>
+                <strong>
+                  {formatCop(
+                    Math.max(0, order.total - (order.delivery_fee || 0)) + (Number(feeInputValue) || 0)
+                  )}
+                </strong>
+              </div>
+            )}
+          </div>
+
+          <footer className="order-view__modal-footer">
+            <button
+              type="button"
+              className="order-view__btn order-view__btn--ghost"
+              onClick={() => setShowFeeModal(false)}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="order-view__btn order-view__btn--primary"
+              disabled={updateFeeMutation.isPending}
+            >
+              {updateFeeMutation.isPending ? (
+                <Loader2 className="order-view__spin" size={16} />
+              ) : (
+                <CheckCircle2 size={16} />
+              )}
+              Guardar monto
+            </button>
+          </footer>
+        </form>
+      </Modal>
     </div>
   );
 }

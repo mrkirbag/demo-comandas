@@ -10,7 +10,7 @@ import PanelLayout from '@/layouts/PanelLayout.astro';
       <h1 class="panel-page__title">Caja</h1>
     </header>
 
-    <CashRegisterPanel client:load />
+    <CashRegisterPanel client:only="react" />
   </div>
 </PanelLayout>
 

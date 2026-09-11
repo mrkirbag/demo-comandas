@@ -5,8 +5,14 @@ export function formatOrderLabel(
     table_number?: string | null;
   },
 ): string {
+  if (order.order_type === 'para_llevar') {
+    const name = order.customer_name?.trim();
+    return name ? `${name} (Para Llevar)` : 'Para Llevar';
+  }
+
   if (order.order_type === 'delivery') {
-    return order.customer_name?.trim() || 'Domicilio';
+    const name = order.customer_name?.trim();
+    return name ? `${name} (Domicilio)` : 'Domicilio';
   }
 
   return `Mesa ${order.table_number ?? '—'}`;
@@ -17,6 +23,10 @@ export function formatOrderShortLabel(
     table_number?: string | null;
   },
 ): string {
+  if (order.order_type === 'para_llevar') {
+    return 'Para Llevar';
+  }
+
   if (order.order_type === 'delivery') {
     return 'Domicilio';
   }
@@ -25,20 +35,23 @@ export function formatOrderShortLabel(
 }
 
 export function isDeliveryOrder(order: Pick<Order, 'order_type'>): boolean {
-  return order.order_type === 'delivery';
+  return order.order_type === 'delivery' || order.order_type === 'para_llevar';
 }
 
 export type CreateDeliveryOrderInput = {
+  order_type?: 'delivery' | 'para_llevar';
   customer_name: string;
   customer_phone: string;
-  delivery_address: string;
-  delivery_notes?: string;
+  delivery_address?: string | null;
+  delivery_notes?: string | null;
+  delivery_fee?: number;
 };
 
 export function validateDeliveryInput(input: CreateDeliveryOrderInput): string | null {
   const name = input.customer_name?.trim();
   const phone = input.customer_phone?.trim();
   const address = input.delivery_address?.trim();
+  const isDelivery = input.order_type === 'delivery' || (!input.order_type && Boolean(address));
 
   if (!name || name.length < 2) {
     return 'El nombre del cliente es requerido';
@@ -48,8 +61,8 @@ export function validateDeliveryInput(input: CreateDeliveryOrderInput): string |
     return 'El teléfono del cliente es requerido';
   }
 
-  if (!address || address.length < 5) {
-    return 'La dirección de entrega es requerida';
+  if (isDelivery && (!address || address.length < 5)) {
+    return 'La dirección de entrega es requerida para domicilios';
   }
 
   return null;
@@ -57,5 +70,6 @@ export function validateDeliveryInput(input: CreateDeliveryOrderInput): string |
 
 export const ORDER_TYPE_LABELS: Record<OrderType, string> = {
   mesa: 'Mesa',
-  delivery: 'Domicilio',
+  delivery: 'Delivery',
+  para_llevar: 'Para Llevar',
 };

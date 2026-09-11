@@ -53,7 +53,7 @@ const ACTIVE_ORDER_SQL = `(
 const ORDER_COLUMNS = `
   id, table_id, order_type, delivery_payment_timing, user_id, cash_register_id, status, total,
   payment_method, foreign_currency, foreign_amount,
-  customer_name, customer_phone, delivery_address, delivery_notes,
+  customer_name, customer_phone, delivery_address, delivery_notes, delivery_fee,
   created_at, updated_at
 `;
 
@@ -73,6 +73,7 @@ const ORDER_LIST_COLUMNS = `
   o.customer_phone,
   o.delivery_address,
   o.delivery_notes,
+  o.delivery_fee,
   o.created_at,
   o.updated_at
 `;
@@ -103,6 +104,7 @@ function mapOrder(row: Record<string, unknown>): Order {
     customer_phone: row.customer_phone ? String(row.customer_phone) : null,
     delivery_address: row.delivery_address ? String(row.delivery_address) : null,
     delivery_notes: row.delivery_notes ? String(row.delivery_notes) : null,
+    delivery_fee: Number(row.delivery_fee ?? 0),
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),
   };
@@ -314,7 +316,7 @@ async function recalculateOrderTotal(orderId: string): Promise<number> {
           SELECT COALESCE(SUM(quantity * price_at_sale), 0)
           FROM order_items
           WHERE order_id = ?
-        ),
+        ) + COALESCE(delivery_fee, 0),
         updated_at = ?
       WHERE id = ?
     `,
@@ -402,10 +404,12 @@ export async function createOrderForTable(tableId: string, userId: string): Prom
 }
 
 export type CreateDeliveryOrderInput = {
+  order_type?: 'delivery' | 'para_llevar';
   customer_name: string;
   customer_phone: string;
-  delivery_address: string;
-  delivery_notes?: string;
+  delivery_address?: string | null;
+  delivery_notes?: string | null;
+  delivery_fee?: number;
   delivery_payment_timing?: DeliveryPaymentTiming;
 };
 
@@ -413,10 +417,12 @@ export async function createDeliveryOrder(
   userId: string,
   input: CreateDeliveryOrderInput,
 ): Promise<Order> {
+  const orderType: OrderType = input.order_type === 'para_llevar' ? 'para_llevar' : 'delivery';
   const customerName = input.customer_name.trim();
   const customerPhone = input.customer_phone.trim();
-  const deliveryAddress = input.delivery_address.trim();
+  const deliveryAddress = input.delivery_address?.trim() || null;
   const deliveryNotes = input.delivery_notes?.trim() || null;
+  const deliveryFee = orderType === 'delivery' && typeof input.delivery_fee === 'number' && input.delivery_fee > 0 ? input.delivery_fee : 0;
   const paymentTiming = input.delivery_payment_timing ?? 'on_delivery';
 
   if (customerName.length < 2) {
@@ -427,8 +433,8 @@ export async function createDeliveryOrder(
     throw new Error('El teléfono del cliente es requerido');
   }
 
-  if (deliveryAddress.length < 5) {
-    throw new Error('La dirección de entrega es requerida');
+  if (orderType === 'delivery' && (!deliveryAddress || deliveryAddress.length < 5)) {
+    throw new Error('La dirección de entrega es requerida para envíos a domicilio');
   }
 
   const orderId = createId();
@@ -438,14 +444,99 @@ export async function createDeliveryOrder(
     sql: `
       INSERT INTO orders (
         id, table_id, order_type, delivery_payment_timing, user_id, status, total,
-        customer_name, customer_phone, delivery_address, delivery_notes,
+        customer_name, customer_phone, delivery_address, delivery_notes, delivery_fee,
         created_at, updated_at
       )
-      VALUES (?, NULL, 'delivery', ?, ?, 'pendiente', 0, ?, ?, ?, ?, ?, ?)
+      VALUES (?, NULL, ?, ?, ?, 'pendiente', ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     args: [
       orderId,
+      orderType,
       paymentTiming,
+      userId,
+      deliveryFee,
+      customerName,
+      customerPhone,
+      deliveryAddress,
+      deliveryNotes,
+      deliveryFee,
+      now,
+      now,
+    ],
+  });
+
+  const order = await getOrderById(orderId);
+  if (!order) throw new Error('No se pudo crear el pedido');
+  return order;
+}
+
+export type PublicOrderItemInput = {
+  productId: string;
+  quantity: number;
+  notes?: string;
+  adicionalIds?: string[];
+};
+
+export type CreatePublicOrderInput = {
+  order_type: 'delivery' | 'para_llevar';
+  customer_name: string;
+  customer_phone: string;
+  delivery_address?: string | null;
+  delivery_notes?: string | null;
+  items: PublicOrderItemInput[];
+};
+
+/**
+ * Creates an order from the public storefront (no auth) and inserts all
+ * cart items in a single pass.  The order starts as `pendiente` with
+ * `delivery_fee = 0` (the manager assigns it later from the panel).
+ */
+export async function createPublicOrderWithItems(
+  userId: string,
+  input: CreatePublicOrderInput,
+): Promise<{ order: Order; itemCount: number }> {
+  const orderType: OrderType = input.order_type === 'para_llevar' ? 'para_llevar' : 'delivery';
+  const customerName = input.customer_name.trim();
+  const customerPhone = input.customer_phone.trim();
+  const deliveryAddress = input.delivery_address?.trim() || null;
+  const deliveryNotes = input.delivery_notes?.trim() || null;
+
+  if (customerName.length < 2) {
+    throw new Error('El nombre del cliente es requerido');
+  }
+
+  if (customerPhone.length < 7) {
+    throw new Error('El teléfono del cliente es requerido');
+  }
+
+  if (orderType === 'delivery' && (!deliveryAddress || deliveryAddress.length < 5)) {
+    throw new Error('La dirección de entrega es requerida para envíos a domicilio');
+  }
+
+  if (!input.items || input.items.length === 0) {
+    throw new Error('El pedido debe tener al menos un producto');
+  }
+
+  if (input.items.length > 50) {
+    throw new Error('No se pueden agregar más de 50 productos en un solo pedido');
+  }
+
+  // Create the order shell (total = 0, will be recalculated after items)
+  const orderId = createId();
+  const now = new Date().toISOString();
+
+  await db.execute({
+    sql: `
+      INSERT INTO orders (
+        id, table_id, order_type, delivery_payment_timing, user_id, status, total,
+        customer_name, customer_phone, delivery_address, delivery_notes, delivery_fee,
+        created_at, updated_at
+      )
+      VALUES (?, NULL, ?, 'on_delivery', ?, 'pendiente', 0, ?, ?, ?, ?, 0, ?, ?)
+    `,
+    args: [
+      orderId,
+      orderType,
       userId,
       customerName,
       customerPhone,
@@ -456,10 +547,127 @@ export async function createDeliveryOrder(
     ],
   });
 
+  // Add each item
+  let addedCount = 0;
+
+  for (const cartItem of input.items) {
+    const product = await getActiveMenuProductById(cartItem.productId);
+    if (!product) {
+      continue; // Skip unavailable products silently
+    }
+
+    const quantity = Number(cartItem.quantity);
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      continue;
+    }
+
+    const extras = await resolveExtrasFromIds(cartItem.adicionalIds ?? []);
+    if (extras.length > 0 && !productUsesAdicionales(product.category)) {
+      // Skip extras for products that don't support them
+    }
+
+    const validExtras = productUsesAdicionales(product.category) ? extras : [];
+    const notes = cartItem.notes?.trim() || null;
+    const priceAtSale = product.price + sumExtrasPrice(validExtras);
+    const extrasJson = validExtras.length > 0 ? JSON.stringify(validExtras) : null;
+
+    const deductions = await resolveDeductionsForStoredItem(
+      { product_id: product.id, extras: validExtras },
+      quantity,
+    );
+
+    // Validate inventory availability
+    for (const deduction of deductions) {
+      try {
+        await validateInventoryDeduction(deduction);
+      } catch (error) {
+        await db.execute({
+          sql: 'DELETE FROM orders WHERE id = ?',
+          args: [orderId],
+        });
+        throw error;
+      }
+    }
+
+    const itemId = createId();
+
+    await db.execute({
+      sql: `
+        INSERT INTO order_items (id, order_id, product_id, quantity, notes, extras, price_at_sale)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `,
+      args: [itemId, orderId, product.id, quantity, notes, extrasJson, priceAtSale],
+    });
+
+    try {
+      await deductInventoryList(deductions, userId, orderId);
+    } catch {
+      await db.execute({
+        sql: 'DELETE FROM order_items WHERE id = ?',
+        args: [itemId],
+      });
+      continue;
+    }
+
+    addedCount++;
+  }
+
+  if (addedCount === 0) {
+    // Clean up the empty order
+    await db.execute({
+      sql: 'DELETE FROM orders WHERE id = ?',
+      args: [orderId],
+    });
+    throw new Error('No se pudo agregar ningún producto al pedido. Verifica la disponibilidad.');
+  }
+
+
+  await recalculateOrderTotal(orderId);
+
   const order = await getOrderById(orderId);
-  if (!order) throw new Error('No se pudo crear el domicilio');
-  return order;
+  if (!order) throw new Error('No se pudo crear el pedido');
+
+  return { order, itemCount: addedCount };
 }
+
+/**
+ * Actualiza el monto del costo de delivery para un pedido y recalcula el total.
+ * Solo permitido para pedidos tipo 'delivery' y mientras la orden no esté pagada/entregada/cancelada.
+ */
+export async function updateOrderDeliveryFee(orderId: string, deliveryFee: number): Promise<Order> {
+  const order = await getOrderById(orderId);
+  if (!order) {
+    throw new Error('Comanda no encontrada');
+  }
+
+  if (order.status === 'pagado' || order.status === 'entregado' || order.status === 'cancelado') {
+    throw new Error('No se puede modificar el costo de delivery de una comanda cerrada o cancelada');
+  }
+
+  if (order.order_type !== 'delivery') {
+    throw new Error('Solo los pedidos a domicilio admiten costo de delivery');
+  }
+
+  const fee = Math.max(0, Number(deliveryFee) || 0);
+  const now = new Date().toISOString();
+
+  await db.execute({
+    sql: `
+      UPDATE orders
+      SET delivery_fee = ?,
+          updated_at = ?
+      WHERE id = ?
+    `,
+    args: [fee, now, orderId],
+  });
+
+  await recalculateOrderTotal(orderId);
+
+  const updated = await getOrderById(orderId);
+  if (!updated) throw new Error('No se pudo actualizar la comanda');
+  return updated;
+}
+
 
 type AddOrderItemInput = {
   productId: string;
@@ -788,9 +996,64 @@ export async function listActiveOrders(
     args.push(...statuses);
   }
 
-  if (orderType) {
+  if (orderType === 'delivery') {
+    conditions.push("o.order_type IN ('delivery', 'para_llevar')");
+  } else if (orderType) {
     conditions.push('o.order_type = ?');
     args.push(orderType);
+  }
+
+  const result = await db.execute({
+    sql: `
+      SELECT
+        ${ORDER_LIST_COLUMNS},
+        t.number AS table_number,
+        u.username,
+        (
+          SELECT COUNT(*)
+          FROM order_items oi
+          WHERE oi.order_id = o.id
+        ) AS item_count
+      FROM orders o
+      LEFT JOIN tables t ON t.id = o.table_id
+      INNER JOIN users u ON u.id = o.user_id
+      WHERE ${conditions.join(' AND ')}
+      ORDER BY o.updated_at DESC
+    `,
+    args,
+  });
+
+  return result.rows.map((row) => mapOrderListItem(row as Record<string, unknown>));
+}
+
+export async function listDeliveryOrders(status?: OrderStatus): Promise<OrderListItem[]> {
+  const conditions: string[] = [
+    "o.order_type IN ('delivery', 'para_llevar')",
+    "o.status != 'cancelado'",
+  ];
+  const args: SqlArgs = [];
+
+  if (status === 'cocina') {
+    conditions.push("o.status IN ('cocina', 'listo', 'pagado')");
+  } else if (status === 'entregado') {
+    conditions.push("o.status = 'entregado'");
+    conditions.push(
+      "(date(o.created_at, 'localtime') = date('now', 'localtime') OR date(o.updated_at, 'localtime') = date('now', 'localtime'))",
+    );
+  } else if (status) {
+    conditions.push('o.status = ?');
+    args.push(status);
+  } else {
+    conditions.push(`(
+      o.status IN ('pendiente', 'pagado', 'cocina', 'listo')
+      OR (
+        o.status = 'entregado'
+        AND (
+          date(o.created_at, 'localtime') = date('now', 'localtime')
+          OR date(o.updated_at, 'localtime') = date('now', 'localtime')
+        )
+      )
+    )`);
   }
 
   const result = await db.execute({
@@ -839,7 +1102,7 @@ export async function listOrdersPendingPayment(): Promise<OrderListItem[]> {
         ) > 0)
         OR (o.order_type = 'mesa' AND o.status = 'entregado' AND o.cash_register_id IS NULL)
         OR (
-          o.order_type = 'delivery'
+          o.order_type IN ('delivery', 'para_llevar')
           AND o.delivery_payment_timing = 'on_delivery'
           AND o.status = 'listo'
           AND o.cash_register_id IS NULL

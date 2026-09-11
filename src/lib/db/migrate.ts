@@ -73,6 +73,8 @@ async function migratePaymentMethods(db: Client): Promise<void> {
 
   if (needsOrdersMigration && ordersSql) {
     const hasDeliveryColumns = await columnExists(db, 'orders', 'order_type');
+    const hasPaymentTiming = await columnExists(db, 'orders', 'delivery_payment_timing');
+    const hasDeliveryFee = await columnExists(db, 'orders', 'delivery_fee');
 
     await db.execute(`
       CREATE TABLE orders_new (
@@ -90,6 +92,8 @@ async function migratePaymentMethods(db: Client): Promise<void> {
         customer_phone TEXT,
         delivery_address TEXT,
         delivery_notes TEXT,
+        delivery_payment_timing TEXT,
+        delivery_fee REAL DEFAULT 0.0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(table_id) REFERENCES tables(id),
@@ -98,18 +102,23 @@ async function migratePaymentMethods(db: Client): Promise<void> {
       )
     `);
 
+    const selectPaymentTiming = hasPaymentTiming ? 'delivery_payment_timing' : 'NULL';
+    const selectDeliveryFee = hasDeliveryFee ? 'delivery_fee' : '0.0';
+
     if (hasDeliveryColumns) {
       await db.execute(`
         INSERT INTO orders_new (
           id, table_id, order_type, user_id, cash_register_id, status, total,
           payment_method, foreign_currency, foreign_amount,
           customer_name, customer_phone, delivery_address, delivery_notes,
+          delivery_payment_timing, delivery_fee,
           created_at, updated_at
         )
         SELECT
           id, table_id, order_type, user_id, cash_register_id, status, total,
           payment_method, foreign_currency, foreign_amount,
           customer_name, customer_phone, delivery_address, delivery_notes,
+          ${selectPaymentTiming}, ${selectDeliveryFee},
           created_at, updated_at
         FROM orders
       `);
@@ -119,12 +128,14 @@ async function migratePaymentMethods(db: Client): Promise<void> {
           id, table_id, order_type, user_id, cash_register_id, status, total,
           payment_method, foreign_currency, foreign_amount,
           customer_name, customer_phone, delivery_address, delivery_notes,
+          delivery_payment_timing, delivery_fee,
           created_at, updated_at
         )
         SELECT
           id, table_id, 'mesa', user_id, cash_register_id, status, total,
           payment_method, foreign_currency, foreign_amount,
           NULL, NULL, NULL, NULL,
+          NULL, 0.0,
           created_at, updated_at
         FROM orders
       `);
@@ -243,6 +254,21 @@ async function migrateDeliveryPaymentTiming(db: Client): Promise<void> {
     `UPDATE orders SET delivery_payment_timing = 'on_delivery' WHERE order_type = 'delivery'`,
   );
   console.log('✓ orders.delivery_payment_timing');
+}
+
+async function migrateDeliveryFee(db: Client): Promise<void> {
+  if (!(await tableExists(db, 'orders'))) {
+    return;
+  }
+
+  if (await columnExists(db, 'orders', 'delivery_fee')) {
+    return;
+  }
+
+  await db.execute(
+    `ALTER TABLE orders ADD COLUMN delivery_fee REAL DEFAULT 0.0`,
+  );
+  console.log('✓ orders.delivery_fee');
 }
 
 function parseSqlStatements(sql: string): string[] {
@@ -397,16 +423,36 @@ export async function runMigrations(dbClient?: Client): Promise<void> {
         quantity INTEGER NOT NULL,
         reason TEXT,
         user_id TEXT NOT NULL,
+        order_id TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(product_id) REFERENCES products(id),
-        FOREIGN KEY(user_id) REFERENCES users(id)
+        FOREIGN KEY(user_id) REFERENCES users(id),
+        FOREIGN KEY(order_id) REFERENCES orders(id)
       )
     `);
     console.log('✓ inventory_movements');
+  } else if (!(await columnExists(db, 'inventory_movements', 'order_id'))) {
+    await db.execute('ALTER TABLE inventory_movements ADD COLUMN order_id TEXT');
+    console.log('✓ inventory_movements.order_id');
+    try {
+      await db.execute(`
+        UPDATE inventory_movements
+        SET order_id = (
+          SELECT o.id FROM orders o
+          WHERE inventory_movements.reason LIKE 'Comanda ' || substr(o.id, 1, 8) || '%'
+             OR inventory_movements.reason LIKE 'Devolución comanda ' || substr(o.id, 1, 8) || '%'
+          LIMIT 1
+        )
+        WHERE order_id IS NULL AND (reason LIKE 'Comanda %' OR reason LIKE 'Devolución comanda %')
+      `);
+    } catch {
+      // Non-fatal if backfill cannot match
+    }
   }
 
   await migrateDeliverySupport(db);
   await migrateDeliveryPaymentTiming(db);
+  await migrateDeliveryFee(db);
   await migratePaymentMethods(db);
 
   if (await tableExists(db, 'order_items') && !(await columnExists(db, 'order_items', 'extras'))) {
@@ -424,6 +470,16 @@ export async function runMigrations(dbClient?: Client): Promise<void> {
       `ALTER TABLE products ADD COLUMN inventory_units_per_sale INTEGER NOT NULL DEFAULT 1`,
     );
     console.log('✓ products.inventory_units_per_sale');
+  }
+
+  if (!(await columnExists(db, 'products', 'image_url'))) {
+    await db.execute('ALTER TABLE products ADD COLUMN image_url TEXT');
+    console.log('✓ products.image_url');
+  }
+
+  if (!(await columnExists(db, 'products', 'description'))) {
+    await db.execute('ALTER TABLE products ADD COLUMN description TEXT');
+    console.log('✓ products.description');
   }
 
   console.log('Migraciones completadas.');

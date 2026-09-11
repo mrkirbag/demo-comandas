@@ -45,6 +45,7 @@ export function useOrderDetail(orderId: string) {
     data: orderQuery.data ?? null,
     products: productsQuery.data ?? [],
     isLoading: orderQuery.isLoading || productsQuery.isLoading,
+    isPending: orderQuery.isPending || productsQuery.isPending,
     isFetching: orderQuery.isFetching,
     dataUpdatedAt: orderQuery.dataUpdatedAt,
     error: orderQuery.error ?? productsQuery.error,

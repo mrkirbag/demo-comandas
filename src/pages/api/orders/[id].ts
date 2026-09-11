@@ -8,12 +8,14 @@ import {
   markOrderDelivered,
   markOrderReady,
   sendOrderToKitchen,
+  updateOrderDeliveryFee,
 } from '@/lib/db/orders';
 import { getTableById } from '@/lib/db/tables';
 import type { OrderStatus, UserRole } from '@/lib/db/types';
 import { isValidStatusTransition } from '@/lib/orders/delivery-flow';
 
 const READ_ROLES: UserRole[] = ['admin', 'cajero', 'mesero', 'cocina'];
+const MANAGE_ROLES: UserRole[] = ['admin', 'cajero', 'mesero'];
 
 const TRANSITION_ROLES: Record<string, UserRole[]> = {
   'pagado:cocina': ['admin', 'cajero', 'mesero'],
@@ -63,7 +65,10 @@ export const PATCH: APIRoute = async (context) => {
     return Response.json({ error: 'Comanda no encontrada' }, { status: 404 });
   }
 
-  let body: { status?: string };
+  let body: {
+    status?: string;
+    delivery_fee?: number | string;
+  };
 
   try {
     body = await context.request.json();
@@ -72,32 +77,45 @@ export const PATCH: APIRoute = async (context) => {
   }
 
   const nextStatus = body.status as OrderStatus | undefined;
+  const hasDeliveryFee = body.delivery_fee !== undefined;
 
-  if (!nextStatus) {
-    return Response.json({ error: 'status es requerido' }, { status: 400 });
-  }
-
-  if (!isValidStatusTransition(order, nextStatus)) {
-    return Response.json({ error: 'Transición de estado no permitida' }, { status: 400 });
-  }
-
-  const transitionKey = `${order.status}:${nextStatus}`;
-  const allowedRoles = TRANSITION_ROLES[transitionKey] ?? [];
-  if (!allowedRoles.includes(session.role)) {
-    return Response.json({ error: 'No tienes permiso para este cambio de estado' }, { status: 403 });
+  if (!nextStatus && !hasDeliveryFee) {
+    return Response.json({ error: 'Se requiere status o delivery_fee' }, { status: 400 });
   }
 
   try {
     let updated = order;
 
-    if (nextStatus === 'cocina') {
-      updated = await sendOrderToKitchen(id);
-    } else if (nextStatus === 'listo' || (nextStatus === 'entregado' && order.status === 'cocina')) {
-      updated = await markOrderReady(id);
-    } else if (nextStatus === 'entregado') {
-      updated = await markOrderDelivered(id);
-    } else if (nextStatus === 'cancelado') {
-      updated = await cancelOrder(id, session.userId);
+    // Actualizar costo de delivery si viene en la petición
+    if (hasDeliveryFee) {
+      if (!MANAGE_ROLES.includes(session.role)) {
+        return Response.json({ error: 'No tienes permiso para modificar el costo de delivery' }, { status: 403 });
+      }
+      const fee = Number(body.delivery_fee) || 0;
+      updated = await updateOrderDeliveryFee(id, fee);
+    }
+
+    // Actualizar estado si viene en la petición
+    if (nextStatus) {
+      if (!isValidStatusTransition(updated, nextStatus)) {
+        return Response.json({ error: 'Transición de estado no permitida' }, { status: 400 });
+      }
+
+      const transitionKey = `${updated.status}:${nextStatus}`;
+      const allowedRoles = TRANSITION_ROLES[transitionKey] ?? [];
+      if (!allowedRoles.includes(session.role)) {
+        return Response.json({ error: 'No tienes permiso para este cambio de estado' }, { status: 403 });
+      }
+
+      if (nextStatus === 'cocina') {
+        updated = await sendOrderToKitchen(id);
+      } else if (nextStatus === 'listo' || (nextStatus === 'entregado' && updated.status === 'cocina')) {
+        updated = await markOrderReady(id);
+      } else if (nextStatus === 'entregado') {
+        updated = await markOrderDelivered(id);
+      } else if (nextStatus === 'cancelado') {
+        updated = await cancelOrder(id, session.userId);
+      }
     }
 
     const detail = await getOrderDetail(id);
@@ -112,3 +130,4 @@ export const PATCH: APIRoute = async (context) => {
     return Response.json({ error: message }, { status: 400 });
   }
 };
+

@@ -19,10 +19,15 @@
 .multi-price__foreign {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: inherit;
   gap: 0.3rem;
   font-size: 0.6875rem;
   font-weight: 500;
   color: var(--color-text-muted);
+}
+
+.multi-price__foreign > span {
   white-space: nowrap;
 }
 

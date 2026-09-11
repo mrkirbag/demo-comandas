@@ -27,6 +27,8 @@ export type BrandContact = {
   address?: string;
   city?: string;
   country?: string;
+  openingHour?: string; // Formato 24h 'HH:mm' (Hora Venezuela)
+  closingHour?: string; // Formato 24h 'HH:mm' (Hora Venezuela)
 };
 
 export type BrandCurrency = {
@@ -79,6 +81,7 @@ export const brand = {
     logo: '/brand/logo.png',
     logoMark: '/brand/logo.png',
     favicon: '/brand/logo.png',
+    loginBackground: undefined,
   },
 
   colors: {
@@ -103,6 +106,8 @@ export const brand = {
     address: 'Barrio Obrero',
     city: 'San Cristóbal',
     country: 'Venezuela',
+    openingHour: '9:00',
+    closingHour: '19:00',
   },
 
   ticket: {

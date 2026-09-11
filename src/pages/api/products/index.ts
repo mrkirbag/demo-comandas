@@ -30,6 +30,8 @@ export const POST: APIRoute = async (context) => {
     name?: string;
     price?: number;
     category?: string;
+    image_url?: string | null;
+    description?: string | null;
     inventory_product_id?: string | null;
     inventory_units_per_sale?: number;
   };
@@ -66,6 +68,8 @@ export const POST: APIRoute = async (context) => {
       name,
       price: Number(price),
       category,
+      image_url: body.image_url ?? null,
+      description: body.description ?? null,
       inventory_product_id: body.inventory_product_id ?? null,
       inventory_units_per_sale: body.inventory_units_per_sale,
     });

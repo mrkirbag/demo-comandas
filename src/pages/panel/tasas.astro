@@ -16,7 +16,7 @@ if (session.role !== 'admin') {
       <h1 class="panel-page__title">Tasas de cambio</h1>
     </header>
 
-    <ExchangeRatesManager client:load />
+    <ExchangeRatesManager client:only="react" />
   </div>
 </PanelLayout>
 

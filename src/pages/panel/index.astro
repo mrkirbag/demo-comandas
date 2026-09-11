@@ -22,11 +22,11 @@ const isAdmin = session.role === 'admin';
       showOrderSections && (
         <>
           <section class="dashboard__section" aria-label="Estado de mesas">
-            <TablesManager client:load isAdmin={isAdmin} variant="dashboard" />
+            <TablesManager client:only="react" isAdmin={isAdmin} variant="dashboard" />
           </section>
 
           <section class="dashboard__section" aria-label="Domicilios activos">
-            <DeliveryManager client:load variant="dashboard" />
+            <DeliveryManager client:only="react" variant="dashboard" />
           </section>
         </>
       )

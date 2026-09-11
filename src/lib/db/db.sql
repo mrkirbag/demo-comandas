@@ -21,6 +21,8 @@ CREATE TABLE products (
     name TEXT NOT NULL,
     price REAL NOT NULL,
     category TEXT NOT NULL,
+    image_url TEXT,
+    description TEXT,
     requires_inventory BOOLEAN DEFAULT FALSE,
     inventory_product_id TEXT REFERENCES products(id),
     inventory_units_per_sale INTEGER NOT NULL DEFAULT 1,
@@ -44,9 +46,11 @@ CREATE TABLE inventory_movements (
     quantity INTEGER NOT NULL,
     reason TEXT,
     user_id TEXT NOT NULL,
+    order_id TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(product_id) REFERENCES products(id),
-    FOREIGN KEY(user_id) REFERENCES users(id)
+    FOREIGN KEY(user_id) REFERENCES users(id),
+    FOREIGN KEY(order_id) REFERENCES orders(id)
 );
 
 -- Sesiones de Caja (Flujo de Dinero)
@@ -70,7 +74,7 @@ CREATE TABLE cash_registers (
 CREATE TABLE orders (
     id TEXT PRIMARY KEY,
     table_id TEXT,
-    order_type TEXT NOT NULL DEFAULT 'mesa' CHECK(order_type IN ('mesa', 'delivery')),
+    order_type TEXT NOT NULL DEFAULT 'mesa' CHECK(order_type IN ('mesa', 'delivery', 'para_llevar')),
     user_id TEXT NOT NULL,
     cash_register_id TEXT,
     status TEXT CHECK(status IN ('pendiente', 'cocina', 'listo', 'entregado', 'pagado', 'cancelado')) DEFAULT 'pendiente',
@@ -83,6 +87,7 @@ CREATE TABLE orders (
     customer_phone TEXT,
     delivery_address TEXT,
     delivery_notes TEXT,
+    delivery_fee REAL DEFAULT 0.0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(table_id) REFERENCES tables(id),

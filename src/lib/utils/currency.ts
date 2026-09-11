@@ -70,3 +70,22 @@ export function formatForeignAmount(
 
   return formatBs(convertCopToBs(amountCop, rates));
 }
+
+export type PublicCurrency = 'COP' | 'USD' | 'BS';
+export const PUBLIC_CURRENCY_STORAGE_KEY = 'public_currency';
+export const CURRENCY_CHANGE_EVENT = 'currency-changed';
+
+export function formatPriceByCurrency(
+  amountCop: number,
+  currency: PublicCurrency,
+  rates: Pick<ExchangeRates, 'usd_rate' | 'bs_rate'>,
+): string {
+  if (currency === 'USD') {
+    return formatUsd(convertCopToUsd(amountCop, rates));
+  }
+  if (currency === 'BS') {
+    return formatBs(convertCopToBs(amountCop, rates));
+  }
+  return formatCop(amountCop);
+}
+

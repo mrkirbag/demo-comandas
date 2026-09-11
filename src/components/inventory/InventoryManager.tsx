@@ -2,12 +2,16 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowDownCircle,
   ArrowUpCircle,
+  Bike,
+  Clock,
   History,
   Loader2,
   Pencil,
   Plus,
   Search,
   Trash2,
+  User,
+  UtensilsCrossed,
   X,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -49,7 +53,7 @@ type MovementFormState = {
 
 const emptyItemForm: ItemFormState = {
   name: '',
-  category: inventoryCategories[0]?.id ?? 'bebidas',
+  category: inventoryCategories[0]?.id ?? 'entradas',
   unit: inventoryUnits[0]?.id ?? 'cajas',
   stock: '0',
   min_stock: '5',
@@ -61,11 +65,124 @@ const emptyMovementForm: MovementFormState = {
   reason: '',
 };
 
-function formatDate(value: string): string {
+function parseUtcDate(value: string): Date {
+  if (!value) return new Date();
+  if (value.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(value)) {
+    return new Date(value);
+  }
+  return new Date(value.replace(' ', 'T') + 'Z');
+}
+
+function formatVenezuelaDate(value: string): string {
+  const date = parseUtcDate(value);
+  if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat('es-VE', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(new Date(value));
+    timeZone: 'America/Caracas',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date);
+}
+
+function formatVenezuelaTime(value: string): string {
+  const date = parseUtcDate(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('es-VE', {
+    timeZone: 'America/Caracas',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  }).format(date);
+}
+
+function getTodayDateString(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getDaysAgoDateString(daysAgo: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() - daysAgo);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+type MovementDisplayInfo = {
+  title: string;
+  tagType: 'mesa' | 'delivery' | 'llevar' | 'manual';
+  tagLabel: string | null;
+};
+
+function getMovementDisplayInfo(movement: {
+  order_id?: string | null;
+  order_type?: string | null;
+  customer_name?: string | null;
+  table_number?: string | null;
+  reason?: string | null;
+  type: 'entrada' | 'salida';
+}): MovementDisplayInfo {
+  const shortId = movement.order_id
+    ? movement.order_id.slice(0, 8)
+    : (movement.reason?.match(/[a-f0-9]{8}/i)?.[0] ?? '');
+
+  const isDevolucion =
+    Boolean(movement.reason?.toLowerCase().includes('devolución')) ||
+    Boolean(movement.reason?.toLowerCase().includes('devolucion'));
+
+  const isDelivery =
+    movement.order_type === 'delivery' ||
+    Boolean(movement.reason?.toLowerCase().includes('delivery'));
+
+  const isTakeout =
+    movement.order_type === 'para_llevar' ||
+    Boolean(movement.reason?.toLowerCase().includes('para llevar'));
+
+  const isComanda =
+    movement.order_type === 'mesa' ||
+    Boolean(movement.table_number) ||
+    Boolean(movement.reason?.toLowerCase().includes('comanda'));
+
+  let title = movement.reason || (movement.type === 'entrada' ? 'Entrada' : 'Salida');
+  let tagType: 'mesa' | 'delivery' | 'llevar' | 'manual' = 'manual';
+  let tagLabel: string | null = null;
+
+  if (isDelivery) {
+    tagType = 'delivery';
+    const client = movement.customer_name?.trim();
+    tagLabel = client ? `Delivery: ${client}` : 'Delivery';
+    const prefix = isDevolucion ? 'Devolución delivery' : 'Delivery';
+    const idPart = shortId ? ` #${shortId}` : '';
+    title = client ? `${prefix}${idPart} — ${client}` : `${prefix}${idPart}`;
+  } else if (isTakeout) {
+    tagType = 'llevar';
+    const client = movement.customer_name?.trim();
+    tagLabel = client ? `Para llevar: ${client}` : 'Para llevar';
+    const prefix = isDevolucion ? 'Devolución para llevar' : 'Para llevar';
+    const idPart = shortId ? ` #${shortId}` : '';
+    title = client ? `${prefix}${idPart} — ${client}` : `${prefix}${idPart}`;
+  } else if (isComanda) {
+    tagType = 'mesa';
+    const tableNumber = movement.table_number?.trim();
+    const tableText = tableNumber
+      ? (tableNumber.toLowerCase().startsWith('mesa') ? tableNumber : `Mesa ${tableNumber}`)
+      : '';
+    tagLabel = tableText || 'Comanda';
+
+    if (tableText && movement.reason && !movement.reason.toLowerCase().includes('mesa')) {
+      title = `${movement.reason} — ${tableText}`;
+    } else if (tableText && !movement.reason) {
+      const prefix = isDevolucion ? 'Devolución comanda' : 'Comanda';
+      title = shortId ? `${prefix} #${shortId} — ${tableText}` : `${prefix} — ${tableText}`;
+    }
+  }
+
+  return { title, tagType, tagLabel };
 }
 
 function InventoryManager() {
@@ -80,9 +197,37 @@ function InventoryManager() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [historyDateFrom, setHistoryDateFrom] = useState('');
+  const [historyDateTo, setHistoryDateTo] = useState('');
+
+  const historyFilters = useMemo(
+    () => ({
+      dateFrom: historyDateFrom,
+      dateTo: historyDateTo,
+    }),
+    [historyDateFrom, historyDateTo],
+  );
 
   const historyItemId = formMode === 'history' && selectedItem ? selectedItem.id : null;
-  const { movements, isLoading: loadingMovements } = useInventoryMovements(historyItemId);
+  const { movements, isLoading: loadingMovements } = useInventoryMovements(
+    historyItemId,
+    historyFilters,
+  );
+
+  const historyStats = useMemo(() => {
+    let entradas = 0;
+    let salidas = 0;
+    for (const m of movements) {
+      if (m.type === 'entrada') entradas += m.quantity;
+      else salidas += m.quantity;
+    }
+    return {
+      entradas,
+      salidas,
+      net: entradas - salidas,
+      count: movements.length,
+    };
+  }, [movements]);
 
   const filteredItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -173,6 +318,8 @@ function InventoryManager() {
     setSelectedItem(null);
     setItemForm(emptyItemForm);
     setMovementForm(emptyMovementForm);
+    setHistoryDateFrom('');
+    setHistoryDateTo('');
     setFormError('');
   }
 
@@ -206,6 +353,8 @@ function InventoryManager() {
   function openHistory(item: InventoryItem) {
     setFormMode('history');
     setSelectedItem(item);
+    setHistoryDateFrom('');
+    setHistoryDateTo('');
     setFormError('');
   }
 
@@ -660,37 +809,217 @@ function InventoryManager() {
         open={formMode === 'history' && Boolean(selectedItem)}
         onClose={closeForm}
         title={selectedItem ? `Historial — ${selectedItem.name}` : 'Historial'}
-        panelClassName="inventory-manager__modal-panel inventory-manager__modal-panel--wide"
-        className="inventory-manager__modal"
+        panelClassName="inventory-manager__modal-panel inventory-manager__modal-panel--wide inventory-manager__modal-panel--history"
+        className="inventory-manager__modal inventory-manager__modal--history"
       >
         <div className="inventory-manager__history">
-          {loadingMovements ? (
-            <SkeletonTable rows={4} />
-          ) : movements.length === 0 ? (
-            <p className="inventory-manager__history-empty">Sin movimientos registrados.</p>
-          ) : (
-            <ul className="inventory-manager__history-list">
-              {movements.map((movement) => (
-                <li key={movement.id} className="inventory-manager__history-item">
-                  <div
-                    className={`inventory-manager__history-type inventory-manager__history-type--${movement.type}`}
+          <div className="inventory-manager__history-toolbar">
+            <div className="inventory-manager__history-dates">
+              <label className="inventory-manager__history-date-field">
+                <span>Desde</span>
+                <input
+                  type="date"
+                  value={historyDateFrom}
+                  onChange={(e) => setHistoryDateFrom(e.target.value)}
+                  className="inventory-manager__date-input"
+                />
+              </label>
+              <label className="inventory-manager__history-date-field">
+                <span>Hasta</span>
+                <input
+                  type="date"
+                  value={historyDateTo}
+                  onChange={(e) => setHistoryDateTo(e.target.value)}
+                  className="inventory-manager__date-input"
+                />
+              </label>
+            </div>
+
+            <div className="inventory-manager__history-presets">
+              <button
+                type="button"
+                className={`inventory-manager__preset-btn ${
+                  historyDateFrom === getTodayDateString() && historyDateTo === getTodayDateString()
+                    ? 'inventory-manager__preset-btn--active'
+                    : ''
+                }`}
+                onClick={() => {
+                  const today = getTodayDateString();
+                  setHistoryDateFrom(today);
+                  setHistoryDateTo(today);
+                }}
+              >
+                Hoy
+              </button>
+              <button
+                type="button"
+                className={`inventory-manager__preset-btn ${
+                  historyDateFrom === getDaysAgoDateString(7) && historyDateTo === getTodayDateString()
+                    ? 'inventory-manager__preset-btn--active'
+                    : ''
+                }`}
+                onClick={() => {
+                  setHistoryDateFrom(getDaysAgoDateString(7));
+                  setHistoryDateTo(getTodayDateString());
+                }}
+              >
+                Últimos 7 días
+              </button>
+              <button
+                type="button"
+                className={`inventory-manager__preset-btn ${
+                  !historyDateFrom && !historyDateTo ? 'inventory-manager__preset-btn--active' : ''
+                }`}
+                onClick={() => {
+                  setHistoryDateFrom('');
+                  setHistoryDateTo('');
+                }}
+              >
+                Todos
+              </button>
+              {(historyDateFrom || historyDateTo) && (
+                <button
+                  type="button"
+                  className="inventory-manager__history-clear-btn"
+                  onClick={() => {
+                    setHistoryDateFrom('');
+                    setHistoryDateTo('');
+                  }}
+                  title="Limpiar fechas"
+                >
+                  <X size={14} />
+                  Limpiar
+                </button>
+              )}
+            </div>
+
+            <div className="inventory-manager__history-metrics">
+              <div className="inventory-manager__metric-pill inventory-manager__metric-pill--entry">
+                <span className="inventory-manager__metric-pill-label">Entradas</span>
+                <span className="inventory-manager__metric-pill-val">+{historyStats.entradas}</span>
+              </div>
+              <div className="inventory-manager__metric-pill inventory-manager__metric-pill--exit">
+                <span className="inventory-manager__metric-pill-label">Salidas</span>
+                <span className="inventory-manager__metric-pill-val">−{historyStats.salidas}</span>
+              </div>
+              <div className="inventory-manager__metric-pill inventory-manager__metric-pill--net">
+                <span className="inventory-manager__metric-pill-label">Balance</span>
+                <span className={`inventory-manager__metric-pill-val ${historyStats.net >= 0 ? 'inventory-manager__metric-pill-val--positive' : 'inventory-manager__metric-pill-val--negative'}`}>
+                  {historyStats.net >= 0 ? `+${historyStats.net}` : `${historyStats.net}`}
+                </span>
+              </div>
+              <div className="inventory-manager__metric-pill inventory-manager__metric-pill--tz">
+                <Clock size={12} />
+                <span>Hora Venezuela (UTC-4)</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="inventory-manager__history-content">
+            {loadingMovements ? (
+              <SkeletonTable rows={4} />
+            ) : movements.length === 0 ? (
+              <div className="inventory-manager__history-empty">
+                <p>
+                  {historyDateFrom || historyDateTo
+                    ? 'No se encontraron movimientos para el rango de fechas seleccionado.'
+                    : 'Sin movimientos registrados.'}
+                </p>
+                {(historyDateFrom || historyDateTo) && (
+                  <button
+                    type="button"
+                    className="inventory-manager__cancel"
+                    onClick={() => {
+                      setHistoryDateFrom('');
+                      setHistoryDateTo('');
+                    }}
                   >
-                    {movement.type === 'entrada' ? '+' : '−'}
-                    {movement.quantity}
-                  </div>
-                  <div className="inventory-manager__history-copy">
-                    <span>
-                      {movement.type === 'entrada' ? 'Entrada' : 'Salida'}
-                      {movement.reason ? ` — ${movement.reason}` : ''}
-                    </span>
-                    <span>
-                      {movement.username} · {formatDate(movement.created_at)}
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+                    Ver todos los movimientos
+                  </button>
+                )}
+              </div>
+            ) : (
+              <ul className="inventory-manager__history-list">
+                {movements.map((movement) => {
+                  const info = getMovementDisplayInfo(movement);
+                  const isEntry = movement.type === 'entrada';
+                  return (
+                    <li
+                      key={movement.id}
+                      className={`inventory-manager__history-card inventory-manager__history-card--${movement.type}`}
+                    >
+                      <div className="inventory-manager__history-card-qty">
+                        <div
+                          className={`inventory-manager__history-badge-icon inventory-manager__history-badge-icon--${movement.type}`}
+                        >
+                          {isEntry ? (
+                            <ArrowDownCircle size={18} strokeWidth={2.4} />
+                          ) : (
+                            <ArrowUpCircle size={18} strokeWidth={2.4} />
+                          )}
+                        </div>
+                        <div className="inventory-manager__history-qty-data">
+                          <span
+                            className={`inventory-manager__history-qty-num inventory-manager__history-qty-num--${movement.type}`}
+                          >
+                            {isEntry ? '+' : '−'}
+                            {movement.quantity}
+                          </span>
+                          <span className="inventory-manager__history-qty-unit">
+                            {selectedItem
+                              ? getInventoryUnitLabel(selectedItem.unit).toLowerCase()
+                              : 'unid.'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="inventory-manager__history-card-content">
+                        <div className="inventory-manager__history-card-header">
+                          <div className="inventory-manager__history-title-group">
+                            <span
+                              className={`inventory-manager__history-type-label inventory-manager__history-type-label--${movement.type}`}
+                            >
+                              {isEntry ? 'Entrada' : 'Salida'}
+                            </span>
+                            <span className="inventory-manager__history-title-text">
+                              {info.title}
+                            </span>
+                          </div>
+
+                          {info.tagLabel && (
+                            <span
+                              className={`inventory-manager__history-pill inventory-manager__history-pill--${info.tagType}`}
+                            >
+                              {info.tagType === 'delivery' && <Bike size={13} />}
+                              {info.tagType === 'mesa' && <UtensilsCrossed size={13} />}
+                              <span>{info.tagLabel}</span>
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="inventory-manager__history-card-footer">
+                          <div className="inventory-manager__history-user-pill">
+                            <User size={13} />
+                            <span>{movement.username}</span>
+                          </div>
+
+                          <div className="inventory-manager__history-date-group">
+                            <span className="inventory-manager__history-date-txt">
+                              {formatVenezuelaDate(movement.created_at)}
+                            </span>
+                            <span className="inventory-manager__history-time-badge">
+                              <Clock size={12} />
+                              <span>{formatVenezuelaTime(movement.created_at)}</span>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </div>
       </Modal>
     </div>

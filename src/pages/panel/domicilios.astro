@@ -1,16 +1,16 @@
 ---
-import DeliveryManager from '@/components/delivery/DeliveryManager';
-import PanelLayout from '@/layouts/PanelLayout.astro';
+import DeliveryManager from "@/components/delivery/DeliveryManager";
+import PanelLayout from "@/layouts/PanelLayout.astro";
 ---
 
 <PanelLayout title="Domicilios | Panel">
   <div class="panel-page">
     <header class="panel-page__header">
       <p class="panel-page__eyebrow">Comandas</p>
-      <h1 class="panel-page__title">Domicilios</h1>
+      <h1 class="panel-page__title">Para Llevar</h1>
     </header>
 
-    <DeliveryManager client:load variant="full" />
+    <DeliveryManager client:only="react" variant="full" />
   </div>
 </PanelLayout>
 

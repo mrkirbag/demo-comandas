@@ -1,7 +1,12 @@
-import { JWT_SECRET, TURSO_AUTH_TOKEN, TURSO_URL } from 'astro:env/server';
+import {
+  JWT_SECRET,
+  TURSO_AUTH_TOKEN,
+  TURSO_URL,
+  UPLOADTHING_TOKEN,
+} from 'astro:env/server';
 
 function pickEnv(
-  name: 'TURSO_URL' | 'TURSO_AUTH_TOKEN' | 'JWT_SECRET',
+  name: 'TURSO_URL' | 'TURSO_AUTH_TOKEN' | 'JWT_SECRET' | 'UPLOADTHING_TOKEN',
   fallback: string,
 ): string {
   const fromProcess = process.env[name];
@@ -18,5 +23,8 @@ export const env = {
   },
   get jwtSecret() {
     return pickEnv('JWT_SECRET', JWT_SECRET);
+  },
+  get uploadthingToken() {
+    return pickEnv('UPLOADTHING_TOKEN', UPLOADTHING_TOKEN);
   },
 } as const;

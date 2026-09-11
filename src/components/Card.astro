@@ -1,0 +1,401 @@
+---
+import { formatCop } from '@/lib/utils/currency';
+import { getMenuCategoryLabel } from '@/data/product-categories';
+import type { Product } from '@/lib/db/types';
+
+export interface Props {
+  product?: Product;
+  id?: string;
+  name?: string;
+  price?: number;
+  description?: string | null;
+  imageUrl?: string | null;
+  category?: string;
+  badge?: string;
+}
+
+const { product, badge } = Astro.props;
+
+const id = Astro.props.id ?? product?.id ?? '';
+const name = Astro.props.name ?? product?.name ?? '';
+const price = Astro.props.price ?? product?.price ?? 0;
+const description = Astro.props.description !== undefined ? Astro.props.description : (product?.description ?? null);
+const imageUrl = Astro.props.imageUrl !== undefined ? Astro.props.imageUrl : (product?.image_url ?? null);
+const category = Astro.props.category ?? product?.category;
+const categoryLabel = badge ?? (category ? getMenuCategoryLabel(category) : undefined);
+const isOutOfStock = Boolean(
+  product?.has_inventory &&
+    product.stock !== null &&
+    product.stock !== undefined &&
+    product.stock <= 0,
+);
+const searchKeywords = `${name.toLowerCase()} ${(description ?? '').toLowerCase()}`;
+---
+
+<a
+  class={`menu-card ${isOutOfStock ? 'menu-card--out-of-stock' : ''}`}
+  href={`/producto/${id}`}
+  data-name={searchKeywords}
+  data-category={category}
+  aria-label={`Ver detalles de ${name}`}
+>
+  <div class="menu-card__media">
+    {
+      imageUrl ? (
+        <img
+          src={imageUrl}
+          alt={name}
+          loading="lazy"
+          class="menu-card__img"
+        />
+      ) : (
+        <div class="menu-card__placeholder" aria-hidden="true">
+          <div class="menu-card__placeholder-bg"></div>
+          <div class="menu-card__placeholder-content">
+            <span class="menu-card__placeholder-letter">{name.trim().charAt(0).toUpperCase()}</span>
+            <svg class="menu-card__placeholder-cutlery" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+              <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+              <line x1="6" y1="1" x2="6" y2="4"></line>
+              <line x1="10" y1="1" x2="10" y2="4"></line>
+              <line x1="14" y1="1" x2="14" y2="4"></line>
+            </svg>
+          </div>
+        </div>
+      )
+    }
+
+    {
+      isOutOfStock ? (
+        <span class="menu-card__badge menu-card__badge--out-of-stock">Agotado</span>
+      ) : categoryLabel ? (
+        <span class="menu-card__badge">{categoryLabel}</span>
+      ) : null
+    }
+
+    <div class="menu-card__gradient-overlay"></div>
+  </div>
+
+  <div class="menu-card__body">
+    <div class="menu-card__info">
+      <h4 class="menu-card__name">{name}</h4>
+      {
+        description && (
+          <p class="menu-card__description" title={description}>
+            {description}
+          </p>
+        )
+      }
+    </div>
+
+    <div class="menu-card__footer">
+      <div class="menu-card__price-box">
+        <span class="menu-card__price-sub">Precio</span>
+        <span class="menu-card__price" data-price-cop={price}>{formatCop(price)}</span>
+      </div>
+
+      <div class={`menu-card__action ${isOutOfStock ? 'menu-card__action--out-of-stock' : ''}`}>
+        <span class="menu-card__action-label">{isOutOfStock ? 'Agotado' : 'Agregar'}</span>
+        <span class="menu-card__action-icon" aria-hidden="true">
+          {isOutOfStock ? (
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+            </svg>
+          )}
+        </span>
+      </div>
+    </div>
+  </div>
+</a>
+
+<style>
+  .menu-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 380px;
+    background: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 1.25rem;
+    overflow: hidden;
+    text-decoration: none;
+    color: #0f0728;
+    box-shadow:
+      0 10px 28px -4px rgba(0, 0, 0, 0.5),
+      0 4px 12px -1px rgba(0, 0, 0, 0.25);
+    transition:
+      transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
+      box-shadow 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
+      border-color 0.25s ease;
+    cursor: pointer;
+  }
+
+  .menu-card:hover {
+    transform: translateY(-6px);
+    box-shadow:
+      0 22px 42px -6px rgba(0, 0, 0, 0.65),
+      0 0 28px rgba(148, 133, 237, 0.4);
+    border-color: #9485ed;
+    background: #ffffff;
+  }
+
+  .menu-card:focus-visible {
+    outline: 3px solid #6d28d9;
+    outline-offset: 3px;
+  }
+
+  /* MEDIA & IMAGEN */
+  .menu-card__media {
+    position: relative;
+    width: 100%;
+    height: 195px;
+    overflow: hidden;
+    background: #f1edfd;
+  }
+
+  .menu-card__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .menu-card:hover .menu-card__img {
+    transform: scale(1.07);
+  }
+
+  .menu-card__gradient-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.15) 0%,
+      transparent 40%,
+      rgba(0, 0, 0, 0.25) 100%
+    );
+  }
+
+  /* PLACEHOLDER ILUSTRADO */
+  .menu-card__placeholder {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(
+      135deg,
+      #f3effe 0%,
+      #ede8ff 100%
+    );
+  }
+
+  .menu-card__placeholder-bg {
+    position: absolute;
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      rgba(109, 40, 217, 0.18) 0%,
+      transparent 70%
+    );
+  }
+
+  .menu-card__placeholder-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .menu-card__placeholder-letter {
+    font-size: 2.85rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #4c1d95;
+    opacity: 1;
+    letter-spacing: -0.03em;
+  }
+
+  .menu-card__placeholder-cutlery {
+    color: #6d28d9;
+    opacity: 1;
+  }
+
+  /* BADGE CATEGORÍA */
+  .menu-card__badge {
+    position: absolute;
+    top: 0.85rem;
+    left: 0.85rem;
+    z-index: 2;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #ffffff;
+    background: #0f0529;
+    border: 1px solid rgba(148, 133, 237, 0.45);
+    border-radius: 999px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  }
+
+  /* CUERPO */
+  .menu-card__body {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex: 1;
+    padding: 1.25rem 1.25rem 1.25rem;
+    background: #ffffff;
+  }
+
+  .menu-card__info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .menu-card__name {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+    line-height: 1.35;
+    letter-spacing: -0.02em;
+    color: #0f0728;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    transition: color 0.2s ease;
+  }
+
+  .menu-card:hover .menu-card__name {
+    color: #6d28d9;
+  }
+
+  .menu-card__description {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    font-weight: 500;
+    color: #4b4466;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* PIE Y ACCIÓN */
+  .menu-card__footer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    margin-top: 0.85rem;
+    border-top: 1px dashed rgba(109, 40, 217, 0.16);
+  }
+
+  .menu-card__price-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .menu-card__price-sub {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #6b638b;
+  }
+
+  .menu-card__price {
+    font-size: 1.3rem;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: #6d28d9;
+  }
+
+  .menu-card__action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 0.95rem;
+    background: #6d28d9;
+    color: #ffffff;
+    border: 1px solid #6d28d9;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    box-shadow: 0 4px 14px rgba(109, 40, 217, 0.35);
+    transition:
+      background-color 0.22s ease,
+      color 0.22s ease,
+      border-color 0.22s ease,
+      transform 0.22s ease,
+      box-shadow 0.22s ease;
+  }
+
+  .menu-card__action-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+  }
+
+  .menu-card:hover .menu-card__action {
+    background: #5b21b6;
+    color: #ffffff;
+    border-color: #5b21b6;
+    box-shadow: 0 6px 18px rgba(91, 33, 182, 0.5);
+    transform: scale(1.04);
+  }
+
+  .menu-card:hover .menu-card__action-icon {
+    transform: scale(1.2);
+  }
+
+  /* ESTADO AGOTADO */
+  .menu-card--out-of-stock {
+    opacity: 0.85;
+  }
+
+  .menu-card--out-of-stock .menu-card__img {
+    filter: grayscale(0.35);
+  }
+
+  .menu-card__badge--out-of-stock {
+    background: #dc2626 !important;
+    border-color: #ef4444 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.45) !important;
+  }
+
+  .menu-card__action--out-of-stock {
+    background: #f1f5f9 !important;
+    color: #64748b !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: none !important;
+  }
+
+  .menu-card--out-of-stock:hover .menu-card__action--out-of-stock {
+    background: #e2e8f0 !important;
+    color: #475569 !important;
+    border-color: #94a3b8 !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+</style>

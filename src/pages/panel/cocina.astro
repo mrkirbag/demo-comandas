@@ -16,7 +16,7 @@ if (session.role !== 'admin' && session.role !== 'cocina' && session.role !== 'm
       <h1 class="panel-page__title">Pedidos en preparación</h1>
     </header>
 
-    <KitchenBoard client:load />
+    <KitchenBoard client:only="react" />
   </div>
 </PanelLayout>
 

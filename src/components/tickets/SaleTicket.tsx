@@ -64,6 +64,10 @@ export default function SaleTicket({
         <p>#{order.id.slice(0, 8).toUpperCase()}</p>
         <p>{formatTicketDateTime(order.updated_at)}</p>
         {cashierUsername && <p>Cajero: {cashierUsername}</p>}
+        {order.order_type === 'delivery' && order.delivery_address && (
+          <p>Dir: {order.delivery_address}</p>
+        )}
+        {order.order_type === 'para_llevar' && <p>Modalidad: PARA LLEVAR</p>}
       </section>
 
       <div className="sale-ticket__divider" />
@@ -93,10 +97,27 @@ export default function SaleTicket({
 
       <div className="sale-ticket__divider" />
 
-      <div className="sale-ticket__line sale-ticket__total">
-        <span>TOTAL</span>
-        <span>{formatCop(order.total)}</span>
-      </div>
+      {order.delivery_fee > 0 ? (
+        <>
+          <div className="sale-ticket__line">
+            <span>SUBTOTAL</span>
+            <span>{formatCop(order.total - order.delivery_fee)}</span>
+          </div>
+          <div className="sale-ticket__line">
+            <span>DOMICILIO</span>
+            <span>{formatCop(order.delivery_fee)}</span>
+          </div>
+          <div className="sale-ticket__line sale-ticket__total">
+            <span>TOTAL</span>
+            <span>{formatCop(order.total)}</span>
+          </div>
+        </>
+      ) : (
+        <div className="sale-ticket__line sale-ticket__total">
+          <span>TOTAL</span>
+          <span>{formatCop(order.total)}</span>
+        </div>
+      )}
 
       <p className="sale-ticket__payment">{paymentText}</p>
 

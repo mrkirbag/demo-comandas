@@ -13,13 +13,13 @@ export const DELIVERY_PAYMENT_TIMING_DESCRIPTIONS: Record<DeliveryPaymentTiming,
 };
 
 export function isDeliveryOrder(order: Pick<Order, 'order_type'>): boolean {
-  return order.order_type === 'delivery';
+  return order.order_type === 'delivery' || order.order_type === 'para_llevar';
 }
 
 export function getDeliveryPaymentTiming(
   order: Pick<Order, 'order_type' | 'delivery_payment_timing'>,
 ): DeliveryPaymentTiming {
-  if (order.order_type !== 'delivery') {
+  if (!isDeliveryOrder(order)) {
     return 'on_delivery';
   }
 

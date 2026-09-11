@@ -53,15 +53,15 @@ export default function KitchenTicket({
         <p>{formatTicketDateTime(printedAt)}</p>
       </section>
 
-      {order.order_type === 'delivery' && (
+      {(order.order_type === 'delivery' || order.order_type === 'para_llevar') && (
         <>
           <div className="kitchen-ticket__divider" />
           <section className="kitchen-ticket__delivery">
             <p>
-              <strong>{order.customer_name}</strong>
+              <strong>{order.customer_name}</strong> {order.order_type === 'para_llevar' && '— [PARA LLEVAR]'}
             </p>
             <p>{order.customer_phone}</p>
-            <p>{order.delivery_address}</p>
+            {order.order_type === 'delivery' && <p>{order.delivery_address}</p>}
             {order.delivery_notes && <p className="kitchen-ticket__notes">{order.delivery_notes}</p>}
           </section>
         </>

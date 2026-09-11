@@ -1,0 +1,345 @@
+---
+import type { ExchangeRates } from '@/lib/db/types';
+
+export interface Props {
+  rates: ExchangeRates;
+  class?: string;
+}
+
+const { rates, class: className = '' } = Astro.props;
+
+// Safe fallback rates if none in DB
+const safeRates = {
+  usd_rate: rates?.usd_rate && rates.usd_rate > 0 ? rates.usd_rate : 4000,
+  bs_rate: rates?.bs_rate && rates.bs_rate > 0 ? rates.bs_rate : 50,
+};
+---
+
+<aside
+  class={`currency-switch-wrapper ${className}`}
+  id="currency-switch-container"
+  aria-label="Selector de moneda"
+>
+  <div class="currency-switch">
+    <!-- Sliding pill background -->
+    <div class="currency-switch__slider" id="currency-slider" aria-hidden="true"></div>
+
+    <button
+      type="button"
+      class="currency-switch__btn currency-switch__btn--active"
+      data-currency="COP"
+      role="radio"
+      aria-checked="true"
+      title="Ver precios en Pesos Colombianos"
+    >
+      <span class="currency-switch__code">COP</span>
+    </button>
+
+    <button
+      type="button"
+      class="currency-switch__btn"
+      data-currency="USD"
+      role="radio"
+      aria-checked="false"
+      title={`Ver precios en Dólares (Tasa: $${safeRates.usd_rate.toLocaleString('es-CO')})`}
+    >
+      <span class="currency-switch__code">USD</span>
+    </button>
+
+    <button
+      type="button"
+      class="currency-switch__btn"
+      data-currency="BS"
+      role="radio"
+      aria-checked="false"
+      title={`Ver precios en Bolívares (Tasa: $${safeRates.bs_rate.toLocaleString('es-CO')})`}
+    >
+      <span class="currency-switch__code">BS</span>
+    </button>
+  </div>
+</aside>
+
+<!-- Store rates in client DOM -->
+<script is:inline define:vars={{ initialRates: safeRates }}>
+  window.__APP_EXCHANGE_RATES__ = initialRates;
+</script>
+
+<script>
+  import {
+    PUBLIC_CURRENCY_STORAGE_KEY,
+    CURRENCY_CHANGE_EVENT,
+    formatPriceByCurrency,
+    type PublicCurrency,
+  } from '@/lib/utils/currency';
+
+  function initCurrencySwitch() {
+    const container = document.getElementById('currency-switch-container');
+    if (!container) return;
+
+    const buttons = Array.from(
+      container.querySelectorAll<HTMLButtonElement>('.currency-switch__btn')
+    );
+    const slider = document.getElementById('currency-slider') as HTMLElement | null;
+
+    const rates = (window as unknown as { __APP_EXCHANGE_RATES__?: { usd_rate: number; bs_rate: number } })
+      .__APP_EXCHANGE_RATES__ || { usd_rate: 4000, bs_rate: 50 };
+
+    // Get stored or default currency
+    let currentCurrency: PublicCurrency = 'COP';
+    try {
+      const stored = localStorage.getItem(PUBLIC_CURRENCY_STORAGE_KEY) as PublicCurrency | null;
+      if (stored && (stored === 'COP' || stored === 'USD' || stored === 'BS')) {
+        currentCurrency = stored;
+      }
+    } catch {
+      currentCurrency = 'COP';
+    }
+
+    // Helper: update price DOM elements
+    function updateDOMPrices(currency: PublicCurrency) {
+      const priceElements = document.querySelectorAll<HTMLElement>('[data-price-cop]');
+      priceElements.forEach((el) => {
+        const raw = el.getAttribute('data-price-cop');
+        if (!raw) return;
+        const amountCop = Number(raw);
+        if (!Number.isFinite(amountCop)) return;
+
+        const formatted = formatPriceByCurrency(amountCop, currency, rates);
+        
+        // Retain prefix like "+" in extras if present
+        const hasPlus = el.dataset.pricePrefix === '+' || el.textContent?.trim().startsWith('+');
+        if (hasPlus && !formatted.startsWith('+')) {
+          el.textContent = `+ ${formatted}`;
+        } else {
+          el.textContent = formatted;
+        }
+
+        // Small pop animation
+        el.classList.remove('price-pulse');
+        // Force reflow
+        void el.offsetWidth;
+        el.classList.add('price-pulse');
+      });
+    }
+
+    // Move sliding pill behind active button
+    function updateSlider(activeBtn: HTMLButtonElement) {
+      if (!slider) return;
+      const left = activeBtn.offsetLeft;
+      const width = activeBtn.offsetWidth;
+      slider.style.transform = `translateX(${left}px)`;
+      slider.style.width = `${width}px`;
+    }
+
+    // Set active currency
+    function setCurrency(newCurrency: PublicCurrency, shouldDispatch = true) {
+      currentCurrency = newCurrency;
+      try {
+        localStorage.setItem(PUBLIC_CURRENCY_STORAGE_KEY, newCurrency);
+      } catch {
+        // LocalStorage disabled/unavailable
+      }
+
+      buttons.forEach((btn) => {
+        const isMatch = btn.dataset.currency === newCurrency;
+        btn.classList.toggle('currency-switch__btn--active', isMatch);
+        btn.setAttribute('aria-checked', isMatch ? 'true' : 'false');
+        if (isMatch) {
+          updateSlider(btn);
+        }
+      });
+
+      updateDOMPrices(newCurrency);
+
+      if (shouldDispatch) {
+        window.dispatchEvent(
+          new CustomEvent(CURRENCY_CHANGE_EVENT, {
+            detail: { currency: newCurrency, rates },
+          })
+        );
+      }
+    }
+
+    // Click events
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.currency as PublicCurrency | undefined;
+        if (target && target !== currentCurrency) {
+          setCurrency(target, true);
+        }
+      });
+    });
+
+    // Initial positioning after DOM is ready
+    requestAnimationFrame(() => {
+      const activeBtn = buttons.find((btn) => btn.dataset.currency === currentCurrency) || buttons[0];
+      if (activeBtn) {
+        setCurrency(currentCurrency, false);
+      }
+    });
+
+    // Re-adjust slider on window resize
+    window.addEventListener('resize', () => {
+      const activeBtn = buttons.find((btn) => btn.dataset.currency === currentCurrency);
+      if (activeBtn) updateSlider(activeBtn);
+    });
+
+    // Listen to external currency change events (e.g. from other components)
+    window.addEventListener(CURRENCY_CHANGE_EVENT, (event: Event) => {
+      const customEvent = event as CustomEvent<{ currency: PublicCurrency }>;
+      if (customEvent.detail?.currency && customEvent.detail.currency !== currentCurrency) {
+        setCurrency(customEvent.detail.currency, false);
+      }
+    });
+  }
+
+  // Initialize on load and on Astro page swaps if view transitions are used
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCurrencySwitch);
+  } else {
+    initCurrencySwitch();
+  }
+  document.addEventListener('astro:page-load', initCurrencySwitch);
+</script>
+
+<style>
+  /* FIXED CORNER WRAPPER */
+  .currency-switch-wrapper {
+    position: fixed;
+    top: 1.25rem;
+    right: 1.5rem;
+    z-index: 70;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.35rem;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* GLASSMORPHIC PILL SWITCH */
+  .currency-switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.28rem;
+    background: rgba(18, 10, 42, 0.85);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(148, 133, 237, 0.3);
+    border-radius: 999px;
+    box-shadow:
+      0 12px 32px -4px rgba(6, 2, 18, 0.7),
+      0 2px 8px rgba(0, 0, 0, 0.35),
+      inset 0 1px 1px rgba(255, 255, 255, 0.15);
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .currency-switch:hover {
+    border-color: rgba(148, 133, 237, 0.55);
+    box-shadow:
+      0 14px 38px -4px rgba(6, 2, 18, 0.8),
+      0 0 20px rgba(148, 133, 237, 0.25),
+      inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  }
+
+  /* SLIDING PILL ACCENT */
+  .currency-switch__slider {
+    position: absolute;
+    top: 0.28rem;
+    left: 0;
+    height: calc(100% - 0.56rem);
+    border-radius: 999px;
+    background: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%);
+    box-shadow:
+      0 4px 14px rgba(109, 40, 217, 0.6),
+      inset 0 1px 1px rgba(255, 255, 255, 0.3);
+    pointer-events: none;
+    transition:
+      transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
+      width 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+    z-index: 1;
+  }
+
+  /* SWITCH BUTTONS */
+  .currency-switch__btn {
+    position: relative;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.38rem 0.85rem;
+    background: transparent;
+    border: none;
+    border-radius: 999px;
+    color: #b3a9dc;
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition:
+      color 0.22s ease,
+      transform 0.15s ease;
+  }
+
+  .currency-switch__btn:hover {
+    color: #ffffff;
+  }
+
+  .currency-switch__btn--active {
+    color: #ffffff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  }
+
+  .currency-switch__code {
+    display: inline-block;
+  }
+
+  /* PULSE ANIMATION WHEN PRICES CHANGE */
+  :global(.price-pulse) {
+    animation: priceFlash 0.35s ease-out;
+  }
+
+  @keyframes priceFlash {
+    0% {
+      opacity: 0.4;
+      transform: scale(0.96);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.05);
+      color: #9485ed;
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* RESPONSIVE MOBILE ADJUSTMENTS */
+  @media (max-width: 640px) {
+    .currency-switch-wrapper {
+      top: 0.85rem;
+      right: 0.85rem;
+      gap: 0.25rem;
+    }
+
+    .currency-switch {
+      padding: 0.22rem;
+    }
+
+    .currency-switch__slider {
+      top: 0.22rem;
+      height: calc(100% - 0.44rem);
+    }
+
+    .currency-switch__btn {
+      padding: 0.32rem 0.65rem;
+      font-size: 0.72rem;
+    }
+  }
+</style>

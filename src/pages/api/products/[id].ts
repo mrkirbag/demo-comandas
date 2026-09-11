@@ -34,6 +34,8 @@ export const PATCH: APIRoute = async (context) => {
     name?: string;
     price?: number;
     category?: string;
+    image_url?: string | null;
+    description?: string | null;
     active?: boolean;
     inventory_product_id?: string | null;
     inventory_units_per_sale?: number;
@@ -74,6 +76,8 @@ export const PATCH: APIRoute = async (context) => {
       name,
       price: price !== undefined ? Number(price) : undefined,
       category,
+      image_url: body.image_url,
+      description: body.description,
       active,
       inventory_product_id: body.inventory_product_id,
       inventory_units_per_sale: body.inventory_units_per_sale,

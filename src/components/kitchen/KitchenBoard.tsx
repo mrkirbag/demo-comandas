@@ -41,7 +41,7 @@ function KitchenBoard() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.tables });
       void queryClient.invalidateQueries({ queryKey: ['orders'] });
 
-      if (order?.order_type === 'delivery' && !openDeliveryReadyWhatsApp(order)) {
+      if ((order?.order_type === 'delivery' || order?.order_type === 'para_llevar') && !openDeliveryReadyWhatsApp(order)) {
         setActionError(
           'Pedido listo y entregado. No se pudo abrir WhatsApp: revisa el teléfono del cliente.',
         );
@@ -124,12 +124,14 @@ function KitchenBoard() {
                   >
                     {isActing ? (
                       <Loader2 className="kitchen-board__spin" size={16} />
-                    ) : order.order_type === 'delivery' ? (
+                    ) : order.order_type === 'delivery' || order.order_type === 'para_llevar' ? (
                       <MessageCircle size={16} />
                     ) : (
                       <CheckCircle2 size={16} />
                     )}
-                    {order.order_type === 'delivery' ? 'Listo, entregar y avisar' : 'Listo y entregar'}
+                    {order.order_type === 'delivery' || order.order_type === 'para_llevar'
+                      ? 'Listo, entregar y avisar'
+                      : 'Listo y entregar'}
                   </button>
                 </footer>
               </article>

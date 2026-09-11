@@ -16,7 +16,7 @@ if (session.role !== 'admin') {
       <h1 class="panel-page__title">Flujo de caja</h1>
     </header>
 
-    <CashFlowPanel client:load />
+    <CashFlowPanel client:only="react" />
   </div>
 </PanelLayout>
 

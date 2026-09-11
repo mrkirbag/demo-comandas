@@ -22,6 +22,7 @@ export function useDeliveryOrders() {
   return {
     orders: query.data ?? [],
     isLoading: query.isLoading,
+    isPending: query.isPending,
     isFetching: query.isFetching,
     dataUpdatedAt: query.dataUpdatedAt,
     error: query.error,

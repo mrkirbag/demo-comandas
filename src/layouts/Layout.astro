@@ -13,6 +13,66 @@ const { title = brand.name } = Astro.props;
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width" />
+		<script is:inline>
+			// 1. Silencia errores no controlados inyectados por extensiones del navegador
+			// (p. ej. Urban VPN Proxy con 200.js / 'M_ID') para evitar alertas falsas en consola.
+			const isExtensionNoise = (err) => {
+				const msg = typeof err === 'string' ? err : err?.message || '';
+				const stack = err?.stack || '';
+				return (
+					msg.includes("reading 'M_ID'") ||
+					msg.includes('M_ID') ||
+					stack.includes('200.js')
+				);
+			};
+
+			window.addEventListener('unhandledrejection', (event) => {
+				if (isExtensionNoise(event.reason)) {
+					event.preventDefault();
+				}
+			});
+
+			window.addEventListener('error', (event) => {
+				if (isExtensionNoise(event.error) || event.filename?.includes('200.js')) {
+					event.preventDefault();
+				}
+			});
+
+			// 2. Elimina atributos inyectados por extensiones del navegador
+			// (p. ej. Bitdefender) antes de que React hidrate, para evitar
+			// falsos positivos de "hydration mismatch".
+			(() => {
+				const ATTR = 'bis_skin_checked';
+
+				const strip = (node) => {
+					if (!node || node.nodeType !== 1) return;
+					node.removeAttribute(ATTR);
+				};
+
+				document.querySelectorAll(`[${ATTR}]`).forEach(strip);
+
+				const observer = new MutationObserver((mutations) => {
+					for (const mutation of mutations) {
+						if (mutation.type === 'attributes' && mutation.attributeName === ATTR) {
+							strip(mutation.target);
+						} else if (mutation.type === 'childList') {
+							mutation.addedNodes.forEach((node) => {
+								if (node.nodeType === 1) {
+									strip(node);
+									node.querySelectorAll?.(`[${ATTR}]`).forEach(strip);
+								}
+							});
+						}
+					}
+				});
+
+				observer.observe(document.documentElement, {
+					attributes: true,
+					childList: true,
+					subtree: true,
+				});
+			})();
+		</script>
 		<link rel="icon" type="image/webp" href={brand.assets.favicon} />
 		<meta name="generator" content={Astro.generator} />
 		<title>{title}</title>

@@ -24,7 +24,16 @@ export const GET: APIRoute = async (context) => {
     return Response.json({ error: 'Ítem no encontrado' }, { status: 404 });
   }
 
-  const movements = await listInventoryMovements(id);
+  const dateFrom = context.url.searchParams.get('date_from') || undefined;
+  const dateTo = context.url.searchParams.get('date_to') || undefined;
+  const limitParam = context.url.searchParams.get('limit');
+  const limit = limitParam ? Number(limitParam) : 100;
+
+  const movements = await listInventoryMovements(id, {
+    limit,
+    dateFrom,
+    dateTo,
+  });
   return Response.json({ movements });
 };
 

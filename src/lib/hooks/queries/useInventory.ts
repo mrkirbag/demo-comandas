@@ -31,15 +31,33 @@ export type InventoryMovementRecord = {
   reason: string | null;
   username: string;
   created_at: string;
+  order_id?: string | null;
+  order_type?: string | null;
+  customer_name?: string | null;
+  table_number?: string | null;
 };
 
-export function useInventoryMovements(itemId: string | null) {
+export type InventoryMovementsFilter = {
+  dateFrom?: string;
+  dateTo?: string;
+};
+
+export function useInventoryMovements(
+  itemId: string | null,
+  filters?: InventoryMovementsFilter,
+) {
+  const dateFrom = filters?.dateFrom?.trim() || '';
+  const dateTo = filters?.dateTo?.trim() || '';
+
   const query = useQuery({
-    queryKey: [...queryKeys.inventory, 'movements', itemId] as const,
+    queryKey: [...queryKeys.inventory, 'movements', itemId, dateFrom, dateTo] as const,
     queryFn: async () => {
-      const data = await fetchJson<{ movements: InventoryMovementRecord[] }>(
-        `/api/inventory/${itemId}/movements`,
-      );
+      const params = new URLSearchParams();
+      if (dateFrom) params.set('date_from', dateFrom);
+      if (dateTo) params.set('date_to', dateTo);
+      const qs = params.toString();
+      const url = `/api/inventory/${itemId}/movements${qs ? `?${qs}` : ''}`;
+      const data = await fetchJson<{ movements: InventoryMovementRecord[] }>(url);
       return data.movements ?? [];
     },
     enabled: Boolean(itemId),

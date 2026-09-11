@@ -2,7 +2,7 @@ import { db } from './client';
 import { runMigrations } from './migrate';
 
 /** Subir este número al agregar migraciones para reaplicarlas en un proceso que ya tenía el esquema en memoria. */
-const SCHEMA_GENERATION = 2;
+const SCHEMA_GENERATION = 6;
 
 let appliedGeneration = 0;
 let schemaCheckPromise: Promise<void> | null = null;

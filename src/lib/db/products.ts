@@ -11,10 +11,14 @@ export type CatalogProduct = {
   name: string;
   price: number;
   category: string;
+  image_url: string | null;
+  description: string | null;
   active: boolean;
   inventory_product_id: string | null;
   inventory_units_per_sale: number;
   inventory_item_name: string | null;
+  stock?: number | null;
+  has_inventory?: boolean;
 };
 
 const CATALOG_COLUMNS = `
@@ -22,40 +26,74 @@ const CATALOG_COLUMNS = `
   p.name,
   p.price,
   p.category,
+  p.image_url,
+  p.description,
   p.active,
   p.inventory_product_id,
   p.inventory_units_per_sale,
-  inv.name AS inventory_item_name
+  inv.name AS inventory_item_name,
+  inv_stock.stock AS inventory_stock
 `;
 
 const CATALOG_FROM = `
   FROM products p
   LEFT JOIN products inv ON inv.id = p.inventory_product_id AND inv.requires_inventory = 1
+  LEFT JOIN inventory inv_stock ON inv_stock.product_id = p.inventory_product_id
 `;
 
 function mapProduct(row: Record<string, unknown>): CatalogProduct {
+  const hasInventory = Boolean(row.inventory_product_id);
+  let stock: number | null = null;
+  if (hasInventory) {
+    const rawStock = row.inventory_stock !== null && row.inventory_stock !== undefined
+      ? Number(row.inventory_stock)
+      : 0;
+    const unitsPerSale = Number(row.inventory_units_per_sale ?? 1);
+    const ratio = Math.max(1, unitsPerSale);
+    stock = Math.max(0, Math.floor(rawStock / ratio));
+  }
+
   return {
     id: String(row.id),
     name: String(row.name),
     price: Number(row.price),
     category: String(row.category),
+    image_url: row.image_url ? String(row.image_url) : null,
+    description: row.description ? String(row.description) : null,
     active: Boolean(row.active),
     inventory_product_id: row.inventory_product_id ? String(row.inventory_product_id) : null,
     inventory_units_per_sale: Number(row.inventory_units_per_sale ?? 1),
     inventory_item_name: row.inventory_item_name ? String(row.inventory_item_name) : null,
+    stock,
+    has_inventory: hasInventory,
   };
 }
 
 function mapMenuProduct(row: Record<string, unknown>): Product {
+  const hasInventory = Boolean(row.inventory_product_id || row.requires_inventory);
+  let stock: number | null = null;
+  if (hasInventory) {
+    const rawStock = row.inventory_stock !== null && row.inventory_stock !== undefined
+      ? Number(row.inventory_stock)
+      : 0;
+    const unitsPerSale = Number(row.inventory_units_per_sale ?? 1);
+    const ratio = Math.max(1, unitsPerSale);
+    stock = Math.max(0, Math.floor(rawStock / ratio));
+  }
+
   return {
     id: String(row.id),
     name: String(row.name),
     price: Number(row.price),
     category: String(row.category),
+    image_url: row.image_url ? String(row.image_url) : null,
+    description: row.description ? String(row.description) : null,
     requires_inventory: Boolean(row.requires_inventory),
     active: Boolean(row.active),
     inventory_product_id: row.inventory_product_id ? String(row.inventory_product_id) : null,
     inventory_units_per_sale: Number(row.inventory_units_per_sale ?? 1),
+    stock,
+    has_inventory: hasInventory,
   };
 }
 
@@ -99,8 +137,8 @@ async function validateInventoryLink(
     return { inventory_product_id: null, inventory_units_per_sale: 1 };
   }
 
-  if (category !== 'bebidas') {
-    throw new Error('Solo las bebidas del menú pueden vincularse al inventario');
+  if (!isValidMenuCategory(category)) {
+    throw new Error('Categoría inválida');
   }
 
   const item = await getInventoryItemById(inventoryProductId);
@@ -174,6 +212,8 @@ type CreateCatalogProductInput = {
   name: string;
   price: number;
   category: string;
+  image_url?: string | null;
+  description?: string | null;
   inventory_product_id?: string | null;
   inventory_units_per_sale?: number;
 };
@@ -192,16 +232,18 @@ export async function createCatalogProduct(
   await db.execute({
     sql: `
       INSERT INTO products (
-        id, name, price, category, requires_inventory, active,
+        id, name, price, category, image_url, description, requires_inventory, active,
         inventory_product_id, inventory_units_per_sale
       )
-      VALUES (?, ?, ?, ?, 0, 1, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, 0, 1, ?, ?)
     `,
     args: [
       id,
       input.name,
       input.price,
       input.category,
+      input.image_url ?? null,
+      input.description ?? null,
       inventoryLink.inventory_product_id,
       inventoryLink.inventory_units_per_sale,
     ],
@@ -216,6 +258,8 @@ type UpdateCatalogProductInput = {
   name?: string;
   price?: number;
   category?: string;
+  image_url?: string | null;
+  description?: string | null;
   active?: boolean;
   inventory_product_id?: string | null;
   inventory_units_per_sale?: number;
@@ -247,6 +291,16 @@ export async function updateCatalogProduct(
     args.push(input.category);
   }
 
+  if (input.image_url !== undefined) {
+    fields.push('image_url = ?');
+    args.push(input.image_url);
+  }
+
+  if (input.description !== undefined) {
+    fields.push('description = ?');
+    args.push(input.description);
+  }
+
   if (input.active !== undefined) {
     fields.push('active = ?');
     args.push(input.active ? 1 : 0);
@@ -255,15 +309,15 @@ export async function updateCatalogProduct(
   const inventoryTouched =
     input.inventory_product_id !== undefined || input.inventory_units_per_sale !== undefined;
 
-  if (inventoryTouched || (input.category !== undefined && nextCategory !== 'bebidas')) {
+  if (inventoryTouched) {
     const inventoryProductId =
-      nextCategory === 'bebidas'
-        ? (input.inventory_product_id ?? current.inventory_product_id)
-        : null;
+      input.inventory_product_id !== undefined
+        ? input.inventory_product_id
+        : current.inventory_product_id;
     const inventoryUnitsPerSale =
-      nextCategory === 'bebidas'
-        ? (input.inventory_units_per_sale ?? current.inventory_units_per_sale)
-        : 1;
+      input.inventory_units_per_sale !== undefined
+        ? input.inventory_units_per_sale
+        : current.inventory_units_per_sale;
 
     const inventoryLink = await validateInventoryLink(
       nextCategory,
@@ -305,10 +359,12 @@ export async function getActiveMenuProductsByIds(ids: string[]): Promise<Product
 
   const placeholders = uniqueIds.map(() => '?').join(', ');
   const result = await db.execute({
-    sql: `SELECT id, name, price, category, requires_inventory, active,
-                 inventory_product_id, inventory_units_per_sale
-          FROM products
-          WHERE id IN (${placeholders}) AND requires_inventory = 0 AND active = 1`,
+    sql: `SELECT p.id, p.name, p.price, p.category, p.image_url, p.description, p.requires_inventory, p.active,
+                 p.inventory_product_id, p.inventory_units_per_sale,
+                 inv.stock AS inventory_stock
+          FROM products p
+          LEFT JOIN inventory inv ON inv.product_id = COALESCE(p.inventory_product_id, CASE WHEN p.requires_inventory = 1 THEN p.id ELSE NULL END)
+          WHERE p.id IN (${placeholders}) AND p.requires_inventory = 0 AND p.active = 1`,
     args: uniqueIds,
   });
 
@@ -318,10 +374,12 @@ export async function getActiveMenuProductsByIds(ids: string[]): Promise<Product
 /** Producto activo del menú por ID (para comandas). */
 export async function getActiveMenuProductById(id: string): Promise<Product | null> {
   const result = await db.execute({
-    sql: `SELECT id, name, price, category, requires_inventory, active,
-                 inventory_product_id, inventory_units_per_sale
-          FROM products
-          WHERE id = ? AND requires_inventory = 0 AND active = 1
+    sql: `SELECT p.id, p.name, p.price, p.category, p.image_url, p.description, p.requires_inventory, p.active,
+                 p.inventory_product_id, p.inventory_units_per_sale,
+                 inv.stock AS inventory_stock
+          FROM products p
+          LEFT JOIN inventory inv ON inv.product_id = COALESCE(p.inventory_product_id, CASE WHEN p.requires_inventory = 1 THEN p.id ELSE NULL END)
+          WHERE p.id = ? AND p.requires_inventory = 0 AND p.active = 1
           LIMIT 1`,
     args: [id],
   });
@@ -333,11 +391,13 @@ export async function getActiveMenuProductById(id: string): Promise<Product | nu
 /** Productos activos del menú para comandas. */
 export async function listActiveMenuProducts(): Promise<Product[]> {
   const result = await db.execute({
-    sql: `SELECT id, name, price, category, requires_inventory, active,
-                 inventory_product_id, inventory_units_per_sale
-          FROM products
-          WHERE requires_inventory = 0 AND active = 1
-          ORDER BY category ASC, name ASC`,
+    sql: `SELECT p.id, p.name, p.price, p.category, p.image_url, p.description, p.requires_inventory, p.active,
+                 p.inventory_product_id, p.inventory_units_per_sale,
+                 inv.stock AS inventory_stock
+          FROM products p
+          LEFT JOIN inventory inv ON inv.product_id = COALESCE(p.inventory_product_id, CASE WHEN p.requires_inventory = 1 THEN p.id ELSE NULL END)
+          WHERE p.requires_inventory = 0 AND p.active = 1
+          ORDER BY p.category ASC, p.name ASC`,
     args: [],
   });
 

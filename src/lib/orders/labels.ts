@@ -18,7 +18,7 @@ export const ACTIVE_ORDER_FILTER_OPTIONS = [
 
 export const DELIVERY_FILTER_OPTIONS = [
   { id: 'all' as const, label: 'Todos' },
-  { id: 'pendiente' as const, label: 'Pendiente' },
-  { id: 'pagado' as const, label: 'Pagado' },
+  { id: 'pendiente' as const, label: 'Pendientes' },
   { id: 'cocina' as const, label: 'En cocina' },
+  { id: 'entregado' as const, label: 'Completados' },
 ];

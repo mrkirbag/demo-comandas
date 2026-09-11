@@ -10,7 +10,7 @@ import PanelLayout from '@/layouts/PanelLayout.astro';
       <h1 class="panel-page__title">Facturas</h1>
     </header>
 
-    <InvoicesList client:load />
+    <InvoicesList client:only="react" />
   </div>
 </PanelLayout>
 

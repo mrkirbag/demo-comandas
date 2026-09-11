@@ -9,7 +9,7 @@ const AUTH_PATHS = new Set(['/login']);
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
 
-  if (pathname.startsWith(PROTECTED_PREFIX) || pathname.startsWith('/api/')) {
+  if (pathname.startsWith(PROTECTED_PREFIX) || pathname.startsWith('/api/') || pathname === '/') {
     await ensureMigrations();
   }
 
@@ -32,14 +32,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   if (AUTH_PATHS.has(pathname) && session) {
     return context.redirect(getDefaultRouteForRole(session.role));
-  }
-
-  if (pathname === '/' && session) {
-    return context.redirect(getDefaultRouteForRole(session.role));
-  }
-
-  if (pathname === '/' && !session) {
-    return context.redirect('/login');
   }
 
   context.locals.session = session;

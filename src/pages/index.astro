@@ -1,3 +1,713 @@
 ---
-// Redirige a /login o /panel según la sesión (middleware).
+import { brand, brandCssVariablesStyle } from '@/data/brand';
+import { menuCategories } from '@/data/product-categories';
+import { listActiveMenuProducts } from '@/lib/db/products';
+import { getExchangeRates } from '@/lib/db/exchange-rates';
+import { isStoreOpen } from '@/lib/utils/schedule';
+import Card from '@/components/Card.astro';
+import CartDrawer from '@/components/cart/CartDrawer';
+import CurrencySwitch from '@/components/currency/CurrencySwitch.astro';
+import '@/styles/global.css';
+
+const [products, exchangeRates] = await Promise.all([
+  listActiveMenuProducts(),
+  getExchangeRates(),
+]);
+
+const storeIsOpen = isStoreOpen(brand.contact.openingHour, brand.contact.closingHour);
+
+const categories = menuCategories
+  .map((category) => ({
+    id: category.id,
+    label: category.label,
+    products: products
+      .filter((product) => product.category === category.id)
+      .sort((a, b) => a.name.localeCompare(b.name)),
+  }))
+  .filter((category) => category.products.length > 0);
+
+const hasProducts = products.length > 0;
+const title = `${brand.name} | Menú`;
 ---
+
+<!doctype html>
+<html lang={brand.locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={`${brand.name} — Menú digital de restaurante. ${brand.tagline}`} />
+    <link rel="icon" type="image/webp" href={brand.assets.favicon} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style is:global set:html={brandCssVariablesStyle()}></style>
+  </head>
+  <body>
+    <!-- SELECTOR DE MONEDA FLOTANTE (FIXED CORNER) -->
+    <CurrencySwitch rates={exchangeRates} />
+
+    <!-- HERO DE RESTAURANTE -->
+    <header class="menu-hero">
+      <div class="menu-hero__ambient" aria-hidden="true"></div>
+      <div class="menu-hero__inner">
+        <div class="menu-hero__topbar">
+          <div
+            class={`menu-hero__status ${storeIsOpen ? 'menu-hero__status--open' : 'menu-hero__status--closed'}`}
+            id="store-status-badge"
+            data-open-hour={brand.contact.openingHour || ''}
+            data-close-hour={brand.contact.closingHour || ''}
+          >
+            <span class={`menu-hero__status-dot ${storeIsOpen ? '' : 'menu-hero__status-dot--closed'}`} aria-hidden="true"></span>
+            <span id="store-status-text">{storeIsOpen ? 'Abierto para pedidos' : 'Cerrado para pedidos'}</span>
+            {brand.contact.openingHour && brand.contact.closingHour && (
+              <span class="menu-hero__status-hours">
+                ({brand.contact.openingHour} - {brand.contact.closingHour})
+              </span>
+            )}
+          </div>
+
+          {
+            brand.contact.city && brand.contact.country && (
+              <div class="menu-hero__location">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                <span>{brand.contact.city}, {brand.contact.country}</span>
+              </div>
+            )
+          }
+        </div>
+
+        <div class="menu-hero__brand">
+          <div class="menu-hero__logo-wrap">
+            <img src={brand.assets.logo} alt={brand.name} class="menu-hero__logo" width={84} height={84} />
+          </div>
+          <div class="menu-hero__copy">
+            <h1 class="menu-hero__name">{brand.name}</h1>
+            <p class="menu-hero__tagline">{brand.tagline}</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="menu">
+      <!-- BARRA DE BÚSQUEDA Y CATEGORÍAS -->
+      <section class="menu__controls">
+        <div class="menu__controls-inner">
+          <div class="menu__search-box">
+            <span class="menu__search-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </span>
+            <input
+              id="menu-search"
+              type="search"
+              placeholder="Buscar en el menú (ej. hamburguesa, papas, bebida)..."
+              aria-label="Buscar un producto en el menú"
+              autocomplete="off"
+            />
+          </div>
+
+          {
+            categories.length > 0 && (
+              <nav class="menu__categories" aria-label="Categorías del menú">
+                {categories.map((category) => (
+                  <a class="menu__category-chip" href={`#${category.id}`}>
+                    <span class="menu__category-name">{category.label}</span>
+                    <span class="menu__category-count">{category.products.length}</span>
+                  </a>
+                ))}
+              </nav>
+            )
+          }
+        </div>
+      </section>
+
+      <!-- SECCIÓN SIN RESULTADOS DE BÚSQUEDA -->
+      <div class="menu__no-results" id="menu-no-results" hidden>
+        <div class="menu__no-results-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            <line x1="8" y1="11" x2="14" y2="11"></line>
+          </svg>
+        </div>
+        <h3>No encontramos platos que coincidan</h3>
+        <p>Prueba buscando con otro término o explora las categorías del restaurante.</p>
+      </div>
+
+      <!-- LISTADO DE SECCIONES -->
+      {
+        !hasProducts ? (
+          <div class="menu__empty">
+            <div class="menu__empty-illustration">🍽️</div>
+            <h3>Menú en preparación</h3>
+            <p>Pronto podrás explorar y ordenar nuestras especialidades culinarias.</p>
+          </div>
+        ) : (
+          <div class="menu__sections" id="menu-sections">
+            {categories.map((category) => (
+              <section class="menu-section" id={category.id} data-category>
+                <header class="menu-section__header">
+                  <div class="menu-section__title-group">
+                    <h2 class="menu-section__title">{category.label}</h2>
+                    <span class="menu-section__badge">
+                      {category.products.length} {category.products.length === 1 ? 'opción' : 'opciones'}
+                    </span>
+                  </div>
+                  <div class="menu-section__line" aria-hidden="true"></div>
+                </header>
+
+                <div class="menu-grid">
+                  {category.products.map((product) => (
+                    <Card product={product} />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )
+      }
+    </main>
+
+    <!-- CARRITO / PEDIDO LATERAL REACT COMPONENT -->
+    <CartDrawer
+      client:load
+      brandName={brand.name}
+      brandPhone={brand.contact.phone}
+      showFloatingButton={true}
+      exchangeRates={exchangeRates}
+      openingHour={brand.contact.openingHour}
+      closingHour={brand.contact.closingHour}
+    />
+
+
+
+    <script>
+      const search = document.getElementById('menu-search') as HTMLInputElement | null;
+      const sections = Array.from(document.querySelectorAll<HTMLElement>('[data-category]'));
+      const cards = Array.from(document.querySelectorAll<HTMLElement>('.menu-card'));
+      const noResults = document.getElementById('menu-no-results') as HTMLElement | null;
+
+      if (search) {
+        search.addEventListener('input', () => {
+          const query = search.value.trim().toLowerCase();
+
+          cards.forEach((card) => {
+            const name = card.dataset.name ?? '';
+            const match = !query || name.includes(query);
+            card.hidden = !match;
+          });
+
+          let visibleSectionCount = 0;
+          sections.forEach((section) => {
+            const visible = Array.from(
+              section.querySelectorAll<HTMLElement>('.menu-card'),
+            ).some((card) => !card.hidden);
+            section.hidden = !visible;
+            if (visible) visibleSectionCount++;
+          });
+
+          if (noResults) {
+            noResults.hidden = visibleSectionCount > 0 || !query;
+          }
+        });
+      }
+
+      // Actualización reactiva del badge de estado según horario de Venezuela
+      const statusBadge = document.getElementById('store-status-badge');
+      const statusText = document.getElementById('store-status-text');
+      const statusDot = statusBadge?.querySelector('.menu-hero__status-dot');
+      const openH = statusBadge?.dataset.openHour;
+      const closeH = statusBadge?.dataset.closeHour;
+
+      function updateStatusBadge() {
+        if (!statusBadge || !statusText || !openH || !closeH) return;
+        const parseMinutes = (t: string) => {
+          const [h, m] = t.split(':').map(Number);
+          return (h || 0) * 60 + (m || 0);
+        };
+        const parts = new Intl.DateTimeFormat('en-US', {
+          timeZone: 'America/Caracas',
+          hour: 'numeric',
+          minute: 'numeric',
+          hour12: false,
+        }).formatToParts(new Date());
+        const hourPart = parts.find((p) => p.type === 'hour')?.value ?? '0';
+        const minPart = parts.find((p) => p.type === 'minute')?.value ?? '0';
+        const curMin = (parseInt(hourPart, 10) % 24) * 60 + parseInt(minPart, 10);
+
+        const oMin = parseMinutes(openH);
+        const cMin = parseMinutes(closeH);
+        let open = false;
+        if (oMin === cMin) open = true;
+        else if (oMin < cMin) open = curMin >= oMin && curMin < cMin;
+        else open = curMin >= oMin || curMin < cMin;
+
+        if (open) {
+          statusBadge.classList.add('menu-hero__status--open');
+          statusBadge.classList.remove('menu-hero__status--closed');
+          statusDot?.classList.remove('menu-hero__status-dot--closed');
+          statusText.textContent = 'Abierto para pedidos';
+        } else {
+          statusBadge.classList.remove('menu-hero__status--open');
+          statusBadge.classList.add('menu-hero__status--closed');
+          statusDot?.classList.add('menu-hero__status-dot--closed');
+          statusText.textContent = 'Cerrado para pedidos';
+        }
+      }
+
+      setInterval(updateStatusBadge, 30000);
+    </script>
+  </body>
+</html>
+
+<style>
+  :global(body) {
+    margin: 0;
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+    background: #0b071a;
+    color: #f1f0f8;
+    --color-background: #0b071a;
+    --color-surface: #181035;
+    --color-text: #ffffff;
+    --color-text-muted: #aca6cb;
+    --color-border: rgba(148, 133, 237, 0.18);
+  }
+
+  /* HERO DEL RESTAURANTE */
+  .menu-hero {
+    position: relative;
+    background: linear-gradient(
+      180deg,
+      #090317 0%,
+      #14082d 55%,
+      #0b071a 100%
+    );
+    color: var(--color-primary-foreground, #dadada);
+    padding: 2.5rem 1.5rem 2.75rem;
+    overflow: hidden;
+  }
+
+  .menu-hero__ambient {
+    position: absolute;
+    top: -30%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 650px;
+    height: 650px;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--color-accent, #9485ed) 24%, transparent) 0%,
+      transparent 70%
+    );
+    pointer-events: none;
+  }
+
+  .menu-hero__inner {
+    position: relative;
+    max-width: 76rem;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.75rem;
+    z-index: 1;
+  }
+
+  .menu-hero__topbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    font-size: 0.8125rem;
+    width: 100%;
+  }
+
+  .menu-hero__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.95rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+    font-weight: 600;
+    transition: all 0.25s ease;
+  }
+
+  .menu-hero__status--open {
+    border-color: rgba(16, 185, 129, 0.3);
+    background: rgba(16, 185, 129, 0.1);
+    color: #a7f3d0;
+  }
+
+  .menu-hero__status--closed {
+    border-color: rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.12);
+    color: #fca5a5;
+  }
+
+  .menu-hero__status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 10px #10b981;
+    animation: statusPulse 2s infinite ease-in-out;
+  }
+
+  .menu-hero__status-dot--closed {
+    background: #ef4444;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+    animation: none;
+  }
+
+  .menu-hero__status-hours {
+    font-size: 0.75rem;
+    font-weight: 500;
+    opacity: 0.85;
+  }
+
+  @keyframes statusPulse {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.6;
+      transform: scale(1.25);
+    }
+  }
+
+  .menu-hero__location {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #c7c1e5;
+    font-weight: 500;
+  }
+
+  /* LOGO Y NOMBRE DEL NEGOCIO CENTRADO */
+  .menu-hero__brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 1.15rem;
+  }
+
+  .menu-hero__logo-wrap {
+    flex-shrink: 0;
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    padding: 0.4rem;
+    background: #ffffff;
+    box-shadow:
+      0 12px 30px -4px rgba(0, 0, 0, 0.6),
+      0 0 0 3px color-mix(in srgb, var(--color-accent, #9485ed) 55%, transparent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .menu-hero__logo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 50%;
+  }
+
+  .menu-hero__copy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    max-width: 38rem;
+  }
+
+  .menu-hero__name {
+    margin: 0;
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+    color: #ffffff;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .menu-hero__tagline {
+    margin: 0.45rem 0 0;
+    font-size: 1rem;
+    color: #c7c1e5;
+    line-height: 1.45;
+  }
+
+  /* MAIN WRAPPER */
+  .menu {
+    max-width: 76rem;
+    margin: 0 auto;
+    padding: 0 1.5rem 6rem;
+  }
+
+  /* BARRA DE CONTROLES: BUSCADOR Y CATEGORÍAS */
+  .menu__controls {
+    position: relative;
+    z-index: 40;
+    margin-top: -1.25rem;
+    margin-bottom: 2.75rem;
+    padding: 0.85rem 0;
+    background: transparent;
+  }
+
+  .menu__controls-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .menu__search-box {
+    position: relative;
+    max-width: 42rem;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .menu__search-icon {
+    position: absolute;
+    left: 1.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9d96bd;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+  }
+
+  .menu__search-box input {
+    width: 100%;
+    padding: 1rem 1.25rem 1rem 3.1rem;
+    font-size: 0.975rem;
+    border: 1px solid rgba(148, 133, 237, 0.25);
+    border-radius: 999px;
+    background: transparent;
+    color: #ffffff;
+    box-shadow:
+      0 10px 25px -4px rgba(0, 0, 0, 0.35),
+      0 2px 6px -1px rgba(0, 0, 0, 0.2);
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  }
+
+  .menu__search-box input::placeholder {
+    color: #8f88b4;
+  }
+
+  .menu__search-box input:focus {
+    border-color: var(--color-accent, #9485ed);
+    background: rgba(148, 133, 237, 0.08);
+    box-shadow:
+      0 0 0 4px rgba(148, 133, 237, 0.25),
+      0 12px 28px -4px rgba(0, 0, 0, 0.6);
+  }
+
+  /* CATEGORÍAS */
+  .menu__categories {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding: 0.25rem 0.5rem 0.5rem;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .menu__categories::-webkit-scrollbar {
+    display: none;
+  }
+
+  .menu__category-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 1.15rem;
+    border: 1px solid rgba(148, 133, 237, 0.25);
+    border-radius: 999px;
+    background: transparent;
+    color: #f1f0f8;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease,
+      border-color 0.2s ease,
+      transform 0.15s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .menu__category-chip:hover {
+    border-color: var(--color-accent, #9485ed);
+    background: rgba(148, 133, 237, 0.15);
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(148, 133, 237, 0.3);
+  }
+
+  .menu__category-count {
+    font-size: 0.75rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(148, 133, 237, 0.18);
+    color: #c4baf8;
+    font-weight: 700;
+  }
+
+  /* SECCIÓN VACÍA O SIN RESULTADOS */
+  .menu__no-results {
+    text-align: center;
+    padding: 4rem 1.5rem;
+    background: #181035;
+    border: 1px dashed rgba(148, 133, 237, 0.28);
+    border-radius: 1.5rem;
+    margin: 2rem 0;
+  }
+
+  .menu__no-results-icon {
+    color: var(--color-accent, #9485ed);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .menu__no-results h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #ffffff;
+  }
+
+  .menu__no-results p {
+    margin: 0;
+    color: #aca6cb;
+    font-size: 0.95rem;
+  }
+
+  .menu__empty {
+    text-align: center;
+    padding: 5rem 1.5rem;
+  }
+
+  .menu__empty-illustration {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .menu__empty h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #ffffff;
+  }
+
+  .menu__empty p {
+    margin: 0;
+    color: #aca6cb;
+  }
+
+  /* SECCIONES Y GRILLA */
+  .menu__sections {
+    display: flex;
+    flex-direction: column;
+    gap: 4.25rem;
+  }
+
+  .menu-section {
+    scroll-margin-top: 6.5rem;
+  }
+
+  .menu-section__header {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin-bottom: 1.75rem;
+  }
+
+  .menu-section__title-group {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  .menu-section__title {
+    margin: 0;
+    font-size: clamp(1.4rem, 3vw, 1.85rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: #ffffff;
+  }
+
+  .menu-section__badge {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #c4baf8;
+    background: rgba(148, 133, 237, 0.16);
+    border: 1px solid rgba(148, 133, 237, 0.22);
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+  }
+
+  .menu-section__line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      rgba(148, 133, 237, 0.45) 0%,
+      rgba(148, 133, 237, 0.12) 60%,
+      transparent 100%
+    );
+  }
+
+  .menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+
+
+
+  @media (max-width: 640px) {
+    .menu-hero {
+      padding: 2rem 1rem 2.25rem;
+    }
+
+    .menu-hero__logo-wrap {
+      width: 76px;
+      height: 76px;
+    }
+
+    .menu {
+      padding: 0 1rem 5rem;
+    }
+
+    .menu__categories {
+      justify-content: flex-start;
+    }
+  }
+</style>

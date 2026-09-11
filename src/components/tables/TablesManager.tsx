@@ -46,7 +46,7 @@ const emptyForm: TableFormState = {
 function TablesManager({ isAdmin = false, variant = 'full' }: TablesManagerProps) {
   const queryClient = useQueryClient();
   const showAdminTools = isAdmin && variant === 'full';
-  const { tables, isLoading, error } = useTables();
+  const { tables, isPending, error } = useTables();
   const [actingId, setActingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState('');
   const [formMode, setFormMode] = useState<FormMode | null>(null);
@@ -254,7 +254,7 @@ function TablesManager({ isAdmin = false, variant = 'full' }: TablesManagerProps
 
       {displayError && <Alert>{displayError}</Alert>}
 
-      {isLoading ? (
+      {isPending ? (
         <SkeletonGrid count={8} />
       ) : tables.length === 0 ? (
         <EmptyState
