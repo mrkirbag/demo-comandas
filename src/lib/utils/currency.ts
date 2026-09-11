@@ -36,26 +36,37 @@ export function roundToCents(value: number): number {
 
 export function roundCop(value: number): number {
   if (!Number.isFinite(value)) return 0;
+  if ((brand.currency.code as string) === 'USD') return roundToCents(value);
   return Math.round(value);
 }
 
-export function convertCopToUsd(amountCop: number, rates: Pick<ExchangeRates, 'usd_rate'>): number {
+export function convertCopToUsd(amountCop: number, rates: Pick<ExchangeRates, 'usd_rate' | 'bs_rate'>): number {
   if (rates.usd_rate <= 0) return 0;
+  if ((brand.currency.code as string) === 'USD') return amountCop;
   return amountCop / rates.usd_rate;
 }
 
-export function convertCopToBs(amountCop: number, rates: Pick<ExchangeRates, 'bs_rate'>): number {
+export function convertCopToBs(amountCop: number, rates: Pick<ExchangeRates, 'usd_rate' | 'bs_rate'>): number {
   if (rates.bs_rate <= 0) return 0;
+  if ((brand.currency.code as string) === 'USD') {
+    if (rates.usd_rate <= 0) return 0;
+    return (amountCop * rates.usd_rate) / rates.bs_rate;
+  }
   return amountCop / rates.bs_rate;
 }
 
-export function convertUsdToCop(amountUsd: number, rates: Pick<ExchangeRates, 'usd_rate'>): number {
+export function convertUsdToCop(amountUsd: number, rates: Pick<ExchangeRates, 'usd_rate' | 'bs_rate'>): number {
   if (rates.usd_rate <= 0) return 0;
+  if ((brand.currency.code as string) === 'USD') return roundCop(amountUsd);
   return roundCop(amountUsd * rates.usd_rate);
 }
 
-export function convertBsToCop(amountBs: number, rates: Pick<ExchangeRates, 'bs_rate'>): number {
+export function convertBsToCop(amountBs: number, rates: Pick<ExchangeRates, 'usd_rate' | 'bs_rate'>): number {
   if (rates.bs_rate <= 0) return 0;
+  if ((brand.currency.code as string) === 'USD') {
+    if (rates.usd_rate <= 0) return 0;
+    return roundCop((amountBs * rates.bs_rate) / rates.usd_rate);
+  }
   return roundCop(amountBs * rates.bs_rate);
 }
 

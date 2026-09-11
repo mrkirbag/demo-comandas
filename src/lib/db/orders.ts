@@ -1188,7 +1188,7 @@ export async function payOrder(
 
       payment.foreign_amount = roundToCents(payment.foreign_amount);
 
-      if (!isForeignAmountWithinRate(payment.foreign_amount, payment.amount_cop, rate)) {
+      if (!isForeignAmountWithinRate(payment.foreign_amount, payment.amount_cop, currency, rates)) {
         throw new Error(
           isBs
             ? 'El monto en bolívares no coincide con la tasa de cambio'
@@ -1213,14 +1213,14 @@ export async function payOrder(
       .find((payment) => payment.foreign_amount && payment.foreign_amount > 0);
 
     if (lastForeign) {
-      const rate =
+      const currency =
         lastForeign.foreign_currency === 'bs' ||
         lastForeign.payment_method === 'punto_de_venta' ||
         lastForeign.payment_method === 'pago_movil'
-          ? rates.bs_rate
-          : rates.usd_rate;
+          ? 'bs'
+          : 'usd';
 
-      if (Math.abs(roundingGap) <= foreignRoundingToleranceCop(rate)) {
+      if (Math.abs(roundingGap) <= foreignRoundingToleranceCop(currency, rates)) {
         lastForeign.amount_cop += roundingGap;
         totalPaid = order.total;
       }

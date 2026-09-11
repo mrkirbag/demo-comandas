@@ -23,7 +23,7 @@ describe('USD cash settlement', () => {
     const exactUsd = totalCop / rates.usd_rate;
 
     expect(exactUsd).toBeCloseTo(6.52525, 5);
-    expect(payableForeignAmount(totalCop, rates.usd_rate)).toBe(6.53);
+    expect(payableForeignAmount(totalCop, 'usd', rates)).toBe(6.53);
     expect(roundToCents(6.5252622772)).toBe(6.53);
   });
 
@@ -46,7 +46,7 @@ describe('USD cash settlement', () => {
       },
     ]);
     expect(settled.tenders[0].snappedToRemaining).toBe(true);
-    expect(isForeignAmountWithinRate(6.53, totalCop, rates.usd_rate)).toBe(true);
+    expect(isForeignAmountWithinRate(6.53, totalCop, 'usd', rates)).toBe(true);
   });
 
   it('no cierra la cuenta si falta más de medio céntimo', () => {
@@ -58,7 +58,7 @@ describe('USD cash settlement', () => {
     );
 
     expect(settled.remainingCop).toBeGreaterThan(0.5);
-    expect(isForeignAmountWithinRate(6.52, totalCop, rates.usd_rate)).toBe(false);
+    expect(isForeignAmountWithinRate(6.52, totalCop, 'usd', rates)).toBe(false);
   });
 
   it('permite combinar dólares y pesos sin dejar residuo periódico', () => {
@@ -79,8 +79,8 @@ describe('USD cash settlement', () => {
 
   it('ajusta el segundo pago en USD al restante periódico', () => {
     const totalCop = 26_101;
-    const remainingAfterThreeDollars = totalCop - copFromForeignAmount(3, rates.usd_rate);
-    const payable = payableForeignAmount(remainingAfterThreeDollars, rates.usd_rate);
+    const remainingAfterThreeDollars = totalCop - copFromForeignAmount(3, 'usd', rates);
+    const payable = payableForeignAmount(remainingAfterThreeDollars, 'usd', rates);
     const settled = settlePaymentLines(
       [
         { method: 'usd_efectivo', amount: 3 },

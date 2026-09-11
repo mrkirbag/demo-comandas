@@ -1,6 +1,7 @@
 import type { ExchangeRates, ForeignCurrency, OrderPaymentInput, PaymentMethod } from '@/lib/db/types';
 import { isBsPaymentMethod, isUsdPaymentMethod } from '@/lib/payments/methods';
-import { roundCop, roundToCents } from '@/lib/utils/currency';
+import { brand } from '@/data/brand';
+import { convertBsToCop, convertCopToBs, convertCopToUsd, convertUsdToCop, roundCop, roundToCents } from '@/lib/utils/currency';
 
 export type TenderLine = {
   method: PaymentMethod;
@@ -17,33 +18,49 @@ export type SettledTender = {
 };
 
 /**
- * Half a cent of foreign currency, in COP.
+ * Half a cent of foreign currency, in base currency.
  * That is the maximum error from rounding a periodic conversion to payable cents.
  */
-export function foreignRoundingToleranceCop(rate: number): number {
-  if (!Number.isFinite(rate) || rate <= 0) return 1;
-  return Math.max(1, Math.ceil(rate / 200));
-}
-
-export function copFromForeignAmount(foreignAmount: number, rate: number): number {
-  return roundCop(roundToCents(foreignAmount) * rate);
-}
-
-export function payableForeignAmount(remainingCop: number, rate: number): number {
-  if (!Number.isFinite(remainingCop) || remainingCop <= 0 || !Number.isFinite(rate) || rate <= 0) {
-    return 0;
+export function foreignRoundingToleranceCop(currency: ForeignCurrency, rates: ExchangeRates): number {
+  if (!rates || rates.usd_rate <= 0 || rates.bs_rate <= 0) return (brand.currency.code as string) === 'USD' ? 0.01 : 1;
+  
+  let rawBase = 0;
+  if (currency === 'usd') {
+    rawBase = (brand.currency.code as string) === 'USD' ? 0.005 : 0.005 * rates.usd_rate;
+  } else {
+    rawBase = (brand.currency.code as string) === 'USD' 
+      ? (0.005 * rates.bs_rate) / rates.usd_rate 
+      : 0.005 * rates.bs_rate;
   }
+  
+  const minTolerance = (brand.currency.code as string) === 'USD' ? 0.01 : 1;
+  return Math.max(minTolerance, (brand.currency.code as string) === 'USD' ? rawBase : Math.ceil(rawBase));
+}
 
-  return roundToCents(remainingCop / rate);
+export function copFromForeignAmount(foreignAmount: number, currency: ForeignCurrency, rates: ExchangeRates): number {
+  if (currency === 'usd') {
+    return convertUsdToCop(foreignAmount, rates);
+  }
+  return convertBsToCop(foreignAmount, rates);
+}
+
+export function payableForeignAmount(remainingCop: number, currency: ForeignCurrency, rates: ExchangeRates): number {
+  if (!Number.isFinite(remainingCop) || remainingCop <= 0 || !rates) return 0;
+  
+  if (currency === 'usd') {
+    return roundToCents(convertCopToUsd(remainingCop, rates));
+  }
+  return roundToCents(convertCopToBs(remainingCop, rates));
 }
 
 export function copCreditedForForeignAmount(
   foreignAmount: number,
-  rate: number,
+  currency: ForeignCurrency,
+  rates: ExchangeRates,
   remainingCop: number,
 ): { amountCop: number; snappedToRemaining: boolean } {
-  const converted = copFromForeignAmount(foreignAmount, rate);
-  const tolerance = foreignRoundingToleranceCop(rate);
+  const converted = copFromForeignAmount(foreignAmount, currency, rates);
+  const tolerance = foreignRoundingToleranceCop(currency, rates);
 
   if (Math.abs(converted - remainingCop) <= tolerance) {
     return { amountCop: remainingCop, snappedToRemaining: converted !== remainingCop };
@@ -55,10 +72,11 @@ export function copCreditedForForeignAmount(
 export function isForeignAmountWithinRate(
   foreignAmount: number,
   amountCop: number,
-  rate: number,
+  currency: ForeignCurrency,
+  rates: ExchangeRates,
 ): boolean {
-  const expectedCop = copFromForeignAmount(foreignAmount, rate);
-  return Math.abs(expectedCop - amountCop) <= foreignRoundingToleranceCop(rate);
+  const expectedCop = copFromForeignAmount(foreignAmount, currency, rates);
+  return Math.abs(expectedCop - amountCop) <= foreignRoundingToleranceCop(currency, rates);
 }
 
 export function settlePaymentLines(
@@ -89,8 +107,7 @@ export function settlePaymentLines(
     }
 
     if (isUsdPaymentMethod(line.method)) {
-      const rate = rates?.usd_rate ?? 0;
-      if (!rates || rate <= 0) {
+      if (!rates || rates.usd_rate <= 0) {
         tenders.push({
           method: line.method,
           amount,
@@ -103,7 +120,7 @@ export function settlePaymentLines(
       }
 
       const foreignAmount = roundToCents(amount);
-      const credited = copCreditedForForeignAmount(foreignAmount, rate, remainingCop);
+      const credited = copCreditedForForeignAmount(foreignAmount, 'usd', rates, remainingCop);
       tenders.push({
         method: line.method,
         amount: foreignAmount,
@@ -117,8 +134,7 @@ export function settlePaymentLines(
     }
 
     if (isBsPaymentMethod(line.method)) {
-      const rate = rates?.bs_rate ?? 0;
-      if (!rates || rate <= 0) {
+      if (!rates || rates.bs_rate <= 0) {
         tenders.push({
           method: line.method,
           amount,
@@ -131,7 +147,7 @@ export function settlePaymentLines(
       }
 
       const foreignAmount = roundToCents(amount);
-      const credited = copCreditedForForeignAmount(foreignAmount, rate, remainingCop);
+      const credited = copCreditedForForeignAmount(foreignAmount, 'bs', rates, remainingCop);
       tenders.push({
         method: line.method,
         amount: foreignAmount,
@@ -181,12 +197,12 @@ export function payableAmountForMethod(
 
   if (isUsdPaymentMethod(method)) {
     if (!rates || rates.usd_rate <= 0) return '';
-    return payableForeignAmount(remainingCop, rates.usd_rate).toFixed(2);
+    return payableForeignAmount(remainingCop, 'usd', rates).toFixed(2);
   }
 
   if (isBsPaymentMethod(method)) {
     if (!rates || rates.bs_rate <= 0) return '';
-    return payableForeignAmount(remainingCop, rates.bs_rate).toFixed(2);
+    return payableForeignAmount(remainingCop, 'bs', rates).toFixed(2);
   }
 
   return String(Math.max(0, roundCop(remainingCop)));

@@ -348,8 +348,8 @@ export default function PayOrderModal({
 
           {exchangeRates && (
             <p className="pay-modal__rates">
-              Referencia al céntimo: {formatUsd(payableForeignAmount(order.total, exchangeRates.usd_rate))} ·{' '}
-              {formatBs(payableForeignAmount(order.total, exchangeRates.bs_rate))}
+              Referencia al céntimo: {formatUsd(payableForeignAmount(order.total, 'usd', exchangeRates))} ·{' '}
+              {formatBs(payableForeignAmount(order.total, 'bs', exchangeRates))}
             </p>
           )}
 
@@ -487,10 +487,10 @@ export default function PayOrderModal({
                               · Restante:{' '}
                               {isUsd
                                 ? formatUsd(
-                                    payableForeignAmount(remainingCop, exchangeRates.usd_rate),
+                                    payableForeignAmount(remainingCop, 'usd', exchangeRates),
                                   )
                                 : formatBs(
-                                    payableForeignAmount(remainingCop, exchangeRates.bs_rate),
+                                    payableForeignAmount(remainingCop, 'bs', exchangeRates),
                                   )}{' '}
                               (≈ {formatCop(remainingCop)})
                             </>

@@ -1004,9 +1004,8 @@ const maxStock = hasInventory ? product.stock! : undefined;
 </html>
 
 <style>
-  :global(html),
-  :global(body) {
-    overflow-x: hidden;
+  :global(*) {
+    box-sizing: border-box;
   }
 
   :global(body) {
@@ -1026,30 +1025,16 @@ const maxStock = hasInventory ? product.stock! : undefined;
     --color-border: rgba(148, 133, 237, 0.18);
   }
 
-  body {
-    margin: 0;
-    background-color: #0b071a;
-    color: #f1f0f8;
-    font-family:
-      "Plus Jakarta Sans",
-      "Inter",
-      system-ui,
-      -apple-system,
-      sans-serif;
-    position: relative;
-    min-height: 100vh;
-    -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
-  }
-
   /* BACKGROUND AMBIENT GLOW */
   .prod-bg-glow {
     position: fixed;
     top: -20%;
     left: 50%;
     transform: translateX(-50%);
-    width: 750px;
-    height: 750px;
+    width: 100vw;
+    max-width: 100%;
+    height: 100vw;
+    max-height: 100%;
     border-radius: 50%;
     background: radial-gradient(
       circle,
@@ -1064,9 +1049,7 @@ const maxStock = hasInventory ? product.stock! : undefined;
   .prod-page {
     position: relative;
     z-index: 1;
-    max-width: 1120px;
-    margin: 0 auto;
-    padding: 1.5rem 1.25rem 5rem;
+    max-width: 100%;
   }
 
   /* TOP NAVIGATION */
@@ -1074,6 +1057,7 @@ const maxStock = hasInventory ? product.stock! : undefined;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
     gap: 1rem;
     margin-bottom: 2rem;
   }
@@ -1135,8 +1119,9 @@ const maxStock = hasInventory ? product.stock! : undefined;
   .prod-nav__actions {
     display: inline-flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.75rem;
-    flex-shrink: 0;
+    flex-shrink: 1;
   }
 
   /* Currency Switch in navbar: reset fixed positioning */
@@ -1177,12 +1162,19 @@ const maxStock = hasInventory ? product.stock! : undefined;
   /* 2-COLUMN LAYOUT */
   .prod-layout {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 2rem;
-    align-items: start;
+    padding: 2rem 1rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   @media (min-width: 880px) {
+    body {
+      overflow-x: hidden;
+    }
+
     .prod-page {
       height: 100vh;
       max-height: 100dvh;
@@ -1212,6 +1204,8 @@ const maxStock = hasInventory ? product.stock! : undefined;
   /* MEDIA SECTION (LEFT) */
   .prod-media-col {
     position: relative;
+    max-width: 100%;
+    width: 100%;
   }
 
   @media (min-width: 880px) {
@@ -1430,6 +1424,7 @@ const maxStock = hasInventory ? product.stock! : undefined;
     letter-spacing: -0.03em;
     color: #ffffff;
     margin: 0 0 0.85rem;
+    word-break: break-word;
   }
 
   .prod-description {
@@ -1529,6 +1524,7 @@ const maxStock = hasInventory ? product.stock! : undefined;
   .prod-section--quantity {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
@@ -1986,6 +1982,7 @@ const maxStock = hasInventory ? product.stock! : undefined;
     .prod-nav {
       gap: 0.5rem;
       margin-bottom: 1.25rem;
+      flex-wrap: wrap;
     }
 
     .prod-nav__actions {
