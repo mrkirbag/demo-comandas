@@ -1,26 +1,35 @@
 ---
-import { brand, brandCssVariablesStyle } from '@/data/brand';
-import { getMenuCategoryLabel } from '@/data/product-categories';
-import { getActiveMenuProductById, listActiveMenuProducts } from '@/lib/db/products';
-import { ADICIONALES_CATEGORY, productUsesAdicionales } from '@/lib/orders/item-extras';
-import { getApplicableModifierGroups, getDefaultSelections } from '@/lib/orders/item-preferences';
-import { formatCop } from '@/lib/utils/currency';
-import { getExchangeRates } from '@/lib/db/exchange-rates';
-import { isStoreOpen } from '@/lib/utils/schedule';
-import CartDrawer from '@/components/cart/CartDrawer';
-import CurrencySwitch from '@/components/currency/CurrencySwitch.astro';
-import '@/styles/global.css';
+import { brand, brandCssVariablesStyle } from "@/data/brand";
+import { getMenuCategoryLabel } from "@/data/product-categories";
+import {
+  getActiveMenuProductById,
+  listActiveMenuProducts,
+} from "@/lib/db/products";
+import {
+  ADICIONALES_CATEGORY,
+  productUsesAdicionales,
+} from "@/lib/orders/item-extras";
+import {
+  getApplicableModifierGroups,
+  getDefaultSelections,
+} from "@/lib/orders/item-preferences";
+import { formatCop } from "@/lib/utils/currency";
+import { getExchangeRates } from "@/lib/db/exchange-rates";
+import { isStoreOpen } from "@/lib/utils/schedule";
+import CartDrawer from "@/components/cart/CartDrawer";
+import CurrencySwitch from "@/components/currency/CurrencySwitch.astro";
+import "@/styles/global.css";
 
 const { id } = Astro.params;
 
 if (!id) {
-  return Astro.redirect('/');
+  return Astro.redirect("/");
 }
 
 const product = await getActiveMenuProductById(id);
 
 if (!product) {
-  return Astro.redirect('/');
+  return Astro.redirect("/");
 }
 
 const [allProducts, exchangeRates] = await Promise.all([
@@ -28,7 +37,10 @@ const [allProducts, exchangeRates] = await Promise.all([
   getExchangeRates(),
 ]);
 
-const storeIsOpen = isStoreOpen(brand.contact.openingHour, brand.contact.closingHour);
+const storeIsOpen = isStoreOpen(
+  brand.contact.openingHour,
+  brand.contact.closingHour,
+);
 
 const adicionalProducts = allProducts
   .filter((item) => item.category === ADICIONALES_CATEGORY)
@@ -39,11 +51,11 @@ const defaultSelections = getDefaultSelections(product.category);
 const usesAdicionales = productUsesAdicionales(product.category);
 
 const singleGroupIds = modifierGroups
-  .filter((group) => group.mode === 'single')
+  .filter((group) => group.mode === "single")
   .map((group) => group.id);
 
 const multipleGroupIds = modifierGroups
-  .filter((group) => group.mode === 'multiple')
+  .filter((group) => group.mode === "multiple")
   .map((group) => group.id);
 
 const categoryLabel = getMenuCategoryLabel(product.category);
@@ -51,14 +63,14 @@ const title = `${product.name} | ${brand.name}`;
 
 const isOutOfStock = Boolean(
   product.has_inventory &&
-    product.stock !== null &&
-    product.stock !== undefined &&
-    product.stock <= 0,
+  product.stock !== null &&
+  product.stock !== undefined &&
+  product.stock <= 0,
 );
 const hasInventory = Boolean(
   product.has_inventory &&
-    product.stock !== null &&
-    product.stock !== undefined,
+  product.stock !== null &&
+  product.stock !== undefined,
 );
 const maxStock = hasInventory ? product.stock! : undefined;
 ---
@@ -69,7 +81,10 @@ const maxStock = hasInventory ? product.stock! : undefined;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
-    <meta name="description" content={product.description ?? `${product.name} — ${brand.name}`} />
+    <meta
+      name="description"
+      content={product.description ?? `${product.name} — ${brand.name}`}
+    />
     <link rel="icon" type="image/webp" href={brand.assets.favicon} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -87,7 +102,17 @@ const maxStock = hasInventory ? product.stock! : undefined;
       <!-- TOP NAVIGATION BAR -->
       <header class="prod-nav">
         <a href="/" class="prod-nav__back" aria-label="Volver al menú">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
             <path d="M19 12H5M12 19l-7-7 7-7"></path>
           </svg>
           <span>Menú principal</span>
@@ -98,14 +123,26 @@ const maxStock = hasInventory ? product.stock! : undefined;
 
           <a href="/pedido" class="prod-nav__cart" aria-label="Ver mi pedido">
             <span class="prod-nav__cart-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"
+                ></path>
                 <line x1="3" y1="6" x2="21" y2="6"></line>
                 <path d="M16 10a4 4 0 0 1-8 0"></path>
               </svg>
             </span>
             <span class="prod-nav__cart-label">Mi pedido</span>
-            <span class="prod-nav__cart-badge" id="nav-cart-badge" hidden>0</span>
+            <span class="prod-nav__cart-badge" id="nav-cart-badge" hidden
+              >0</span
+            >
           </a>
         </div>
       </header>
@@ -126,15 +163,27 @@ const maxStock = hasInventory ? product.stock! : undefined;
                   />
                 ) : (
                   <div class="prod-placeholder" aria-hidden="true">
-                    <div class="prod-placeholder__bg"></div>
+                    <div class="prod-placeholder__bg" />
                     <div class="prod-placeholder__content">
-                      <span class="prod-placeholder__letter">{product.name.trim().charAt(0).toUpperCase()}</span>
-                      <svg class="prod-placeholder__cutlery" viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
-                        <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
-                        <line x1="6" y1="1" x2="6" y2="4"></line>
-                        <line x1="10" y1="1" x2="10" y2="4"></line>
-                        <line x1="14" y1="1" x2="14" y2="4"></line>
+                      <span class="prod-placeholder__letter">
+                        {product.name.trim().charAt(0).toUpperCase()}
+                      </span>
+                      <svg
+                        class="prod-placeholder__cutlery"
+                        viewBox="0 0 24 24"
+                        width="36"
+                        height="36"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.6"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
+                        <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
+                        <line x1="6" y1="1" x2="6" y2="4" />
+                        <line x1="10" y1="1" x2="10" y2="4" />
+                        <line x1="14" y1="1" x2="14" y2="4" />
                       </svg>
                     </div>
                   </div>
@@ -153,12 +202,16 @@ const maxStock = hasInventory ? product.stock! : undefined;
             <div class="prod-header">
               <div class="prod-category-tag">{categoryLabel}</div>
               <h1 class="prod-title">{product.name}</h1>
-              {product.description && (
-                <p class="prod-description">{product.description}</p>
-              )}
+              {
+                product.description && (
+                  <p class="prod-description">{product.description}</p>
+                )
+              }
               <div class="prod-price-hero">
                 <span class="prod-price-label">Precio base</span>
-                <span class="prod-price-val" data-price-cop={product.price}>{formatCop(product.price)}</span>
+                <span class="prod-price-val" data-price-cop={product.price}
+                  >{formatCop(product.price)}</span
+                >
               </div>
             </div>
 
@@ -166,8 +219,8 @@ const maxStock = hasInventory ? product.stock! : undefined;
             <form
               class="prod-form"
               id="product-form"
-              data-has-inventory={hasInventory ? 'true' : 'false'}
-              data-stock={hasInventory ? String(maxStock) : ''}
+              data-has-inventory={hasInventory ? "true" : "false"}
+              data-stock={hasInventory ? String(maxStock) : ""}
             >
               <!-- QUANTITY STEPPER -->
               <div class="prod-section prod-section--quantity">
@@ -175,17 +228,22 @@ const maxStock = hasInventory ? product.stock! : undefined;
                   <span class="prod-section__title">Cantidad</span>
                   {
                     isOutOfStock ? (
-                      <span class="prod-section__stock-tag prod-section__stock-tag--empty">Agotado en inventario</span>
+                      <span class="prod-section__stock-tag prod-section__stock-tag--empty">
+                        Agotado en inventario
+                      </span>
                     ) : hasInventory && maxStock !== undefined ? (
                       <span class="prod-section__stock-tag">
-                        Disponibles: <strong>{maxStock}</strong> {maxStock === 1 ? 'unidad' : 'unidades'}
+                        Disponibles: <strong>{maxStock}</strong>{" "}
+                        {maxStock === 1 ? "unidad" : "unidades"}
                       </span>
                     ) : (
-                      <span class="prod-section__hint">¿Cuántas unidades deseas?</span>
+                      <span class="prod-section__hint">
+                        ¿Cuántas unidades deseas?
+                      </span>
                     )
                   }
                 </div>
-                
+
                 <div class="prod-stepper">
                   <button
                     type="button"
@@ -194,7 +252,16 @@ const maxStock = hasInventory ? product.stock! : undefined;
                     aria-label="Disminuir cantidad"
                     disabled={isOutOfStock}
                   >
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
                       <line x1="5" y1="12" x2="19" y2="12"></line>
                     </svg>
                   </button>
@@ -218,9 +285,19 @@ const maxStock = hasInventory ? product.stock! : undefined;
                     class="prod-stepper__btn"
                     id="qty-increase"
                     aria-label="Aumentar cantidad"
-                    disabled={isOutOfStock || (hasInventory && maxStock !== undefined && maxStock <= 1)}
+                    disabled={isOutOfStock ||
+                      (hasInventory && maxStock !== undefined && maxStock <= 1)}
                   >
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
                       <line x1="12" y1="5" x2="12" y2="19"></line>
                       <line x1="5" y1="12" x2="19" y2="12"></line>
                     </svg>
@@ -233,46 +310,77 @@ const maxStock = hasInventory ? product.stock! : undefined;
                 modifierGroups.length > 0 && (
                   <div class="prod-section">
                     <div class="prod-section__heading">
-                      <span class="prod-section__title">Personaliza tu preparación</span>
-                      <span class="prod-section__hint">Indícanos tus preferencias</span>
+                      <span class="prod-section__title">
+                        Personaliza tu preparación
+                      </span>
+                      <span class="prod-section__hint">
+                        Indícanos tus preferencias
+                      </span>
                     </div>
 
                     <div class="prod-modifiers-wrap">
                       {modifierGroups.map((group) => (
                         <div class="prod-mod-group">
                           <div class="prod-mod-group__header">
-                            <span class="prod-mod-group__label">{group.label}</span>
+                            <span class="prod-mod-group__label">
+                              {group.label}
+                            </span>
                             <span class="prod-mod-group__badge">
-                              {group.mode === 'single' ? 'Elige 1 opción' : 'Opcional'}
+                              {group.mode === "single"
+                                ? "Elige 1 opción"
+                                : "Opcional"}
                             </span>
                           </div>
 
                           <div
                             class="prod-mod-chips"
-                            role={group.mode === 'single' ? 'radiogroup' : 'group'}
+                            role={
+                              group.mode === "single" ? "radiogroup" : "group"
+                            }
                             aria-label={group.label}
                           >
                             {group.options.map((option) => {
-                              const isChecked = group.mode === 'single'
-                                ? defaultSelections[group.id]?.[0] === option
-                                : (defaultSelections[group.id]?.includes(option) ?? false);
+                              const isChecked =
+                                group.mode === "single"
+                                  ? defaultSelections[group.id]?.[0] === option
+                                  : (defaultSelections[group.id]?.includes(
+                                      option,
+                                    ) ?? false);
 
                               return (
                                 <label class="prod-mod-chip">
                                   <input
-                                    type={group.mode === 'single' ? 'radio' : 'checkbox'}
+                                    type={
+                                      group.mode === "single"
+                                        ? "radio"
+                                        : "checkbox"
+                                    }
                                     name={group.id}
                                     value={option}
                                     checked={isChecked}
                                     class="prod-mod-chip__input"
                                   />
                                   <span class="prod-mod-chip__box">
-                                    <span class="prod-mod-chip__check" aria-hidden="true">
-                                      <svg viewBox="0 0 20 20" width="12" height="12" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    <span
+                                      class="prod-mod-chip__check"
+                                      aria-hidden="true"
+                                    >
+                                      <svg
+                                        viewBox="0 0 20 20"
+                                        width="12"
+                                        height="12"
+                                        fill="currentColor"
+                                      >
+                                        <path
+                                          fill-rule="evenodd"
+                                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                          clip-rule="evenodd"
+                                        />
                                       </svg>
                                     </span>
-                                    <span class="prod-mod-chip__text">{option}</span>
+                                    <span class="prod-mod-chip__text">
+                                      {option}
+                                    </span>
                                   </span>
                                 </label>
                               );
@@ -290,11 +398,19 @@ const maxStock = hasInventory ? product.stock! : undefined;
                 usesAdicionales && adicionalProducts.length > 0 && (
                   <div class="prod-section">
                     <div class="prod-section__heading">
-                      <span class="prod-section__title">Adicionales sugeridos</span>
-                      <span class="prod-section__hint">Personaliza y añade más sabor</span>
+                      <span class="prod-section__title">
+                        Adicionales sugeridos
+                      </span>
+                      <span class="prod-section__hint">
+                        Personaliza y añade más sabor
+                      </span>
                     </div>
 
-                    <div class="prod-extras-grid" role="group" aria-label="Adicionales disponibles">
+                    <div
+                      class="prod-extras-grid"
+                      role="group"
+                      aria-label="Adicionales disponibles"
+                    >
                       {adicionalProducts.map((extra) => (
                         <label class="prod-extra-item">
                           <input
@@ -306,17 +422,37 @@ const maxStock = hasInventory ? product.stock! : undefined;
                             class="prod-extra-item__input"
                           />
                           <div class="prod-extra-item__box">
-                            <div class="prod-extra-item__check-wrap" aria-hidden="true">
+                            <div
+                              class="prod-extra-item__check-wrap"
+                              aria-hidden="true"
+                            >
                               <span class="prod-extra-item__checkbox">
-                                <svg viewBox="0 0 20 20" width="12" height="12" fill="currentColor">
-                                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                <svg
+                                  viewBox="0 0 20 20"
+                                  width="12"
+                                  height="12"
+                                  fill="currentColor"
+                                >
+                                  <path
+                                    fill-rule="evenodd"
+                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                    clip-rule="evenodd"
+                                  />
                                 </svg>
                               </span>
                             </div>
                             <div class="prod-extra-item__info">
-                              <span class="prod-extra-item__name">{extra.name}</span>
+                              <span class="prod-extra-item__name">
+                                {extra.name}
+                              </span>
                             </div>
-                            <span class="prod-extra-item__price" data-price-cop={extra.price} data-price-prefix="+">+ {formatCop(extra.price)}</span>
+                            <span
+                              class="prod-extra-item__price"
+                              data-price-cop={extra.price}
+                              data-price-prefix="+"
+                            >
+                              + {formatCop(extra.price)}
+                            </span>
                           </div>
                         </label>
                       ))}
@@ -330,9 +466,14 @@ const maxStock = hasInventory ? product.stock! : undefined;
                 <div class="prod-checkout-summary">
                   <div class="prod-checkout-row">
                     <span class="prod-checkout-label">Total estimado</span>
-                    <span class="prod-checkout-total" id="product-total">{formatCop(product.price)}</span>
+                    <span class="prod-checkout-total" id="product-total"
+                      >{formatCop(product.price)}</span
+                    >
                   </div>
-                  <span class="prod-checkout-subtext" id="product-summary-detail">
+                  <span
+                    class="prod-checkout-subtext"
+                    id="product-summary-detail"
+                  >
                     1 unidad • {formatCop(product.price)} base
                   </span>
                 </div>
@@ -340,58 +481,109 @@ const maxStock = hasInventory ? product.stock! : undefined;
                 <div class="prod-cta-group">
                   <button
                     type="submit"
-                    class={`prod-submit-btn ${!storeIsOpen ? 'prod-submit-btn--closed' : ''} ${isOutOfStock ? 'prod-submit-btn--disabled' : ''}`}
+                    class={`prod-submit-btn ${!storeIsOpen ? "prod-submit-btn--closed" : ""} ${isOutOfStock ? "prod-submit-btn--disabled" : ""}`}
                     id="product-submit-btn"
                     disabled={!storeIsOpen || isOutOfStock}
-                    title={
-                      isOutOfStock
-                        ? 'Producto agotado en inventario'
-                        : !storeIsOpen
-                          ? `Pedidos dentro del horario laboral (${brand.contact.openingHour || ''} - ${brand.contact.closingHour || ''})`
-                          : undefined
-                    }
+                    title={isOutOfStock
+                      ? "Producto agotado en inventario"
+                      : !storeIsOpen
+                        ? `Pedidos dentro del horario laboral (${brand.contact.openingHour || ""} - ${brand.contact.closingHour || ""})`
+                        : undefined}
                   >
-                    {isOutOfStock ? (
-                      <>
-                        <span class="prod-submit-btn__icon" aria-hidden="true">
-                          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="15" y1="9" x2="9" y2="15"></line>
-                            <line x1="9" y1="9" x2="15" y2="15"></line>
-                          </svg>
-                        </span>
-                        <span class="prod-submit-btn__label">Producto Agotado</span>
-                      </>
-                    ) : storeIsOpen ? (
-                      <>
-                        <span class="prod-submit-btn__icon" aria-hidden="true">
-                          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                            <line x1="3" y1="6" x2="21" y2="6"></line>
-                            <path d="M16 10a4 4 0 0 1-8 0"></path>
-                          </svg>
-                        </span>
-                        <span class="prod-submit-btn__label">Agregar al pedido</span>
-                        <span class="prod-submit-btn__dot">•</span>
-                        <span class="prod-submit-btn__price" id="btn-total">{formatCop(product.price)}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span class="prod-submit-btn__icon" aria-hidden="true">
-                          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <polyline points="12 6 12 12 16 14"></polyline>
-                          </svg>
-                        </span>
-                        <span class="prod-submit-btn__label">Pedidos dentro del horario laboral</span>
-                      </>
-                    )}
+                    {
+                      isOutOfStock ? (
+                        <>
+                          <span
+                            class="prod-submit-btn__icon"
+                            aria-hidden="true"
+                          >
+                            <svg
+                              viewBox="0 0 24 24"
+                              width="20"
+                              height="20"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            >
+                              <circle cx="12" cy="12" r="10" />
+                              <line x1="15" y1="9" x2="9" y2="15" />
+                              <line x1="9" y1="9" x2="15" y2="15" />
+                            </svg>
+                          </span>
+                          <span class="prod-submit-btn__label">
+                            Producto Agotado
+                          </span>
+                        </>
+                      ) : storeIsOpen ? (
+                        <>
+                          <span
+                            class="prod-submit-btn__icon"
+                            aria-hidden="true"
+                          >
+                            <svg
+                              viewBox="0 0 24 24"
+                              width="20"
+                              height="20"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2.2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            >
+                              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                              <line x1="3" y1="6" x2="21" y2="6" />
+                              <path d="M16 10a4 4 0 0 1-8 0" />
+                            </svg>
+                          </span>
+                          <span class="prod-submit-btn__label">
+                            Agregar al pedido
+                          </span>
+                          <span class="prod-submit-btn__dot">•</span>
+                          <span class="prod-submit-btn__price" id="btn-total">
+                            {formatCop(product.price)}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span
+                            class="prod-submit-btn__icon"
+                            aria-hidden="true"
+                          >
+                            <svg
+                              viewBox="0 0 24 24"
+                              width="20"
+                              height="20"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            >
+                              <circle cx="12" cy="12" r="10" />
+                              <polyline points="12 6 12 12 16 14" />
+                            </svg>
+                          </span>
+                          <span class="prod-submit-btn__label">
+                            Pedidos dentro del horario laboral
+                          </span>
+                        </>
+                      )
+                    }
                   </button>
 
-                  <div class="prod-feedback-toast" id="product-feedback" hidden aria-live="polite">
+                  <div
+                    class="prod-feedback-toast"
+                    id="product-feedback"
+                    hidden
+                    aria-live="polite"
+                  >
                     <span class="prod-feedback-toast__icon">✓</span>
                     <span>¡Agregado con éxito a tu pedido!</span>
-                    <a href="/pedido" class="prod-feedback-toast__link">Ver pedido →</a>
+                    <a href="/pedido" class="prod-feedback-toast__link"
+                      >Ver pedido →</a
+                    >
                   </div>
                 </div>
               </div>
@@ -412,21 +604,23 @@ const maxStock = hasInventory ? product.stock! : undefined;
       closingHour={brand.contact.closingHour}
     />
 
-
-
     <!-- CLIENT CONFIGURATION DATA -->
-    <script type="application/json" id="product-config" set:html={JSON.stringify({
-      productId: product.id,
-      productName: product.name,
-      productPrice: product.price,
-      productImageUrl: product.image_url,
-      singleGroupIds,
-      multipleGroupIds,
-      exchangeRates,
-      isStoreOpen: storeIsOpen,
-      hasInventory,
-      stock: maxStock ?? null,
-    })}></script>
+    <script
+      type="application/json"
+      id="product-config"
+      set:html={JSON.stringify({
+        productId: product.id,
+        productName: product.name,
+        productPrice: product.price,
+        productImageUrl: product.image_url,
+        singleGroupIds,
+        multipleGroupIds,
+        exchangeRates,
+        isStoreOpen: storeIsOpen,
+        hasInventory,
+        stock: maxStock ?? null,
+      })}
+    />
 
     <!-- CLIENT LOGIC SCRIPT -->
     <script>
@@ -436,11 +630,18 @@ const maxStock = hasInventory ? product.stock! : undefined;
         PUBLIC_CURRENCY_STORAGE_KEY,
         CURRENCY_CHANGE_EVENT,
         type PublicCurrency,
-      } from '@/lib/utils/currency';
-      import { addToCart, getCartItems, notifyCartChanged, openCartDrawer, CART_STORAGE_KEY, CART_EVENT } from '@/lib/cart';
+      } from "@/lib/utils/currency";
+      import {
+        addToCart,
+        getCartItems,
+        notifyCartChanged,
+        openCartDrawer,
+        CART_STORAGE_KEY,
+        CART_EVENT,
+      } from "@/lib/cart";
 
-      const configEl = document.getElementById('product-config');
-      if (!configEl) throw new Error('Product config missing');
+      const configEl = document.getElementById("product-config");
+      if (!configEl) throw new Error("Product config missing");
       const {
         productId,
         productName,
@@ -452,7 +653,7 @@ const maxStock = hasInventory ? product.stock! : undefined;
         isStoreOpen = true,
         hasInventory = false,
         stock = null,
-      } = JSON.parse(configEl.textContent || '{}') as {
+      } = JSON.parse(configEl.textContent || "{}") as {
         productId: string;
         productName: string;
         productPrice: number;
@@ -465,17 +666,31 @@ const maxStock = hasInventory ? product.stock! : undefined;
         stock?: number | null;
       };
 
-      const form = document.getElementById('product-form') as HTMLFormElement | null;
-      const quantityInput = document.getElementById('quantity') as HTMLInputElement | null;
-      const btnDecrease = document.getElementById('qty-decrease');
-      const btnIncrease = document.getElementById('qty-increase');
-      const totalEl = document.getElementById('product-total') as HTMLElement | null;
-      const btnTotalEl = document.getElementById('btn-total') as HTMLElement | null;
-      const summaryDetailEl = document.getElementById('product-summary-detail') as HTMLElement | null;
-      const feedback = document.getElementById('product-feedback') as HTMLElement | null;
+      const form = document.getElementById(
+        "product-form",
+      ) as HTMLFormElement | null;
+      const quantityInput = document.getElementById(
+        "quantity",
+      ) as HTMLInputElement | null;
+      const btnDecrease = document.getElementById("qty-decrease");
+      const btnIncrease = document.getElementById("qty-increase");
+      const totalEl = document.getElementById(
+        "product-total",
+      ) as HTMLElement | null;
+      const btnTotalEl = document.getElementById(
+        "btn-total",
+      ) as HTMLElement | null;
+      const summaryDetailEl = document.getElementById(
+        "product-summary-detail",
+      ) as HTMLElement | null;
+      const feedback = document.getElementById(
+        "product-feedback",
+      ) as HTMLElement | null;
       let feedbackTimeoutId: number | undefined;
-      const submitBtn = document.getElementById('product-submit-btn') as HTMLButtonElement | null;
-      const navCartBadge = document.getElementById('nav-cart-badge');
+      const submitBtn = document.getElementById(
+        "product-submit-btn",
+      ) as HTMLButtonElement | null;
+      const navCartBadge = document.getElementById("nav-cart-badge");
 
       function updateNavCartBadge() {
         if (!navCartBadge) return;
@@ -487,7 +702,10 @@ const maxStock = hasInventory ? product.stock! : undefined;
           }
           const items = JSON.parse(raw);
           if (Array.isArray(items) && items.length > 0) {
-            const count = items.reduce((acc: number, item: any) => acc + (Number(item.quantity) || 1), 0);
+            const count = items.reduce(
+              (acc: number, item: any) => acc + (Number(item.quantity) || 1),
+              0,
+            );
             navCartBadge.textContent = String(count);
             navCartBadge.hidden = false;
           } else {
@@ -500,40 +718,57 @@ const maxStock = hasInventory ? product.stock! : undefined;
 
       function getSelectedOptions(group: string): string[] {
         const inputs = Array.from(
-          form?.querySelectorAll<HTMLInputElement>(`input[name="${group}"]:checked`) ?? [],
+          form?.querySelectorAll<HTMLInputElement>(
+            `input[name="${group}"]:checked`,
+          ) ?? [],
         );
         return inputs.map((input) => input.value);
       }
 
-      function getCheckedAdicionales(): Array<{ id: string; name: string; price: number }> {
+      function getCheckedAdicionales(): Array<{
+        id: string;
+        name: string;
+        price: number;
+      }> {
         const inputs = Array.from(
-          form?.querySelectorAll<HTMLInputElement>('input[name="adicional"]:checked') ?? [],
+          form?.querySelectorAll<HTMLInputElement>(
+            'input[name="adicional"]:checked',
+          ) ?? [],
         );
         return inputs.map((input) => ({
           id: input.value,
-          name: input.dataset.name ?? '',
+          name: input.dataset.name ?? "",
           price: Number(input.dataset.price ?? 0),
         }));
       }
 
-      let currentCurrency: PublicCurrency = 'COP';
+      let currentCurrency: PublicCurrency = "COP";
       try {
-        const stored = localStorage.getItem(PUBLIC_CURRENCY_STORAGE_KEY) as PublicCurrency | null;
-        if (stored === 'COP' || stored === 'USD' || stored === 'BS') {
+        const stored = localStorage.getItem(
+          PUBLIC_CURRENCY_STORAGE_KEY,
+        ) as PublicCurrency | null;
+        if (stored === "COP" || stored === "USD" || stored === "BS") {
           currentCurrency = stored;
         }
       } catch {}
 
       function updateAllPriceLabels() {
-        const elements = document.querySelectorAll<HTMLElement>('[data-price-cop]');
+        const elements =
+          document.querySelectorAll<HTMLElement>("[data-price-cop]");
         elements.forEach((el) => {
-          const raw = el.getAttribute('data-price-cop');
+          const raw = el.getAttribute("data-price-cop");
           if (!raw) return;
           const priceVal = Number(raw);
           if (!Number.isFinite(priceVal)) return;
 
-          const formatted = formatPriceByCurrency(priceVal, currentCurrency, exchangeRates);
-          const hasPlus = el.dataset.pricePrefix === '+' || el.textContent?.trim().startsWith('+');
+          const formatted = formatPriceByCurrency(
+            priceVal,
+            currentCurrency,
+            exchangeRates,
+          );
+          const hasPlus =
+            el.dataset.pricePrefix === "+" ||
+            el.textContent?.trim().startsWith("+");
           el.textContent = hasPlus ? `+ ${formatted}` : formatted;
         });
       }
@@ -562,24 +797,32 @@ const maxStock = hasInventory ? product.stock! : undefined;
         const extras = getCheckedAdicionales();
         const extrasTotal = extras.reduce((sum, extra) => sum + extra.price, 0);
         const total = (productPrice + extrasTotal) * quantity;
-        const formattedTotal = formatPriceByCurrency(total, currentCurrency, exchangeRates);
+        const formattedTotal = formatPriceByCurrency(
+          total,
+          currentCurrency,
+          exchangeRates,
+        );
 
         if (totalEl) totalEl.textContent = formattedTotal;
         if (btnTotalEl) btnTotalEl.textContent = formattedTotal;
 
         if (summaryDetailEl) {
-          const unitWord = quantity === 1 ? 'unidad' : 'unidades';
+          const unitWord = quantity === 1 ? "unidad" : "unidades";
           if (extras.length > 0) {
-            summaryDetailEl.textContent = `${quantity} ${unitWord} • Incluye ${extras.length} adicional${extras.length > 1 ? 'es' : ''}`;
+            summaryDetailEl.textContent = `${quantity} ${unitWord} • Incluye ${extras.length} adicional${extras.length > 1 ? "es" : ""}`;
           } else {
-            const formattedBase = formatPriceByCurrency(productPrice, currentCurrency, exchangeRates);
+            const formattedBase = formatPriceByCurrency(
+              productPrice,
+              currentCurrency,
+              exchangeRates,
+            );
             summaryDetailEl.textContent = `${quantity} ${unitWord} • ${formattedBase} c/u`;
           }
         }
       }
 
       // Initial price labels update if not COP
-      if (currentCurrency !== 'COP') {
+      if (currentCurrency !== "COP") {
         updateAllPriceLabels();
         recalculate();
       }
@@ -595,12 +838,12 @@ const maxStock = hasInventory ? product.stock! : undefined;
       }
 
       // STEPPER LISTENERS
-      btnDecrease?.addEventListener('click', () => {
+      btnDecrease?.addEventListener("click", () => {
         const current = getValidQuantity();
         setQuantity(current - 1);
       });
 
-      btnIncrease?.addEventListener('click', () => {
+      btnIncrease?.addEventListener("click", () => {
         const current = getValidQuantity();
         if (hasInventory && stock !== null && current >= stock) {
           return;
@@ -608,7 +851,7 @@ const maxStock = hasInventory ? product.stock! : undefined;
         setQuantity(current + 1);
       });
 
-      quantityInput?.addEventListener('input', () => {
+      quantityInput?.addEventListener("input", () => {
         const raw = Number(quantityInput.value);
         if (!isNaN(raw) && raw > 0) {
           if (hasInventory && stock !== null && raw > stock) {
@@ -618,13 +861,13 @@ const maxStock = hasInventory ? product.stock! : undefined;
         }
       });
 
-      quantityInput?.addEventListener('blur', () => {
+      quantityInput?.addEventListener("blur", () => {
         const current = getValidQuantity();
         quantityInput.value = String(current);
         recalculate();
       });
 
-      quantityInput?.addEventListener('change', () => {
+      quantityInput?.addEventListener("change", () => {
         const current = getValidQuantity();
         quantityInput.value = String(current);
         recalculate();
@@ -632,13 +875,15 @@ const maxStock = hasInventory ? product.stock! : undefined;
 
       // FORM LISTENERS
       if (form) {
-        form.addEventListener('input', (event) => {
+        form.addEventListener("input", (event) => {
           const target = event.target as HTMLElement | null;
           const input = target instanceof HTMLInputElement ? target : null;
           if (!input) return;
 
           if (singleGroupIds.includes(input.name)) {
-            const groupInputs = form.querySelectorAll<HTMLInputElement>(`input[name="${input.name}"]`);
+            const groupInputs = form.querySelectorAll<HTMLInputElement>(
+              `input[name="${input.name}"]`,
+            );
             groupInputs.forEach((candidate) => {
               if (candidate !== input) candidate.checked = false;
             });
@@ -647,7 +892,7 @@ const maxStock = hasInventory ? product.stock! : undefined;
           recalculate();
         });
 
-        form.addEventListener('submit', (event) => {
+        form.addEventListener("submit", (event) => {
           event.preventDefault();
 
           if (!isStoreOpen || (hasInventory && stock !== null && stock <= 0)) {
@@ -665,7 +910,8 @@ const maxStock = hasInventory ? product.stock! : undefined;
           if (hasInventory && stock !== null) {
             if (stock <= 0) {
               if (feedback) {
-                feedback.textContent = 'Este producto está agotado en inventario.';
+                feedback.textContent =
+                  "Este producto está agotado en inventario.";
                 feedback.hidden = false;
               }
               return;
@@ -673,9 +919,10 @@ const maxStock = hasInventory ? product.stock! : undefined;
             if (inCartForThis + quantity > stock) {
               const maxCanAdd = Math.max(0, stock - inCartForThis);
               if (feedback) {
-                feedback.textContent = maxCanAdd <= 0
-                  ? `Ya tienes el máximo disponible (${stock}) en tu pedido.`
-                  : `Solo puedes agregar ${maxCanAdd} más (stock: ${stock}, en carrito: ${inCartForThis}).`;
+                feedback.textContent =
+                  maxCanAdd <= 0
+                    ? `Ya tienes el máximo disponible (${stock}) en tu pedido.`
+                    : `Solo puedes agregar ${maxCanAdd} más (stock: ${stock}, en carrito: ${inCartForThis}).`;
                 feedback.hidden = false;
                 window.clearTimeout(feedbackTimeoutId);
                 feedbackTimeoutId = window.setTimeout(() => {
@@ -690,12 +937,12 @@ const maxStock = hasInventory ? product.stock! : undefined;
 
           for (const groupId of multipleGroupIds) {
             const selected = getSelectedOptions(groupId);
-            if (selected.length > 0) notes.push(selected.join(', '));
+            if (selected.length > 0) notes.push(selected.join(", "));
           }
 
           for (const groupId of singleGroupIds) {
             const selected = getSelectedOptions(groupId);
-            if (selected.length > 0) notes.push(selected.join(', '));
+            if (selected.length > 0) notes.push(selected.join(", "));
           }
 
           try {
@@ -705,7 +952,7 @@ const maxStock = hasInventory ? product.stock! : undefined;
               imageUrl: productImageUrl,
               basePrice: productPrice,
               quantity,
-              notes: notes.join(', '),
+              notes: notes.join(", "),
               adicionales: getCheckedAdicionales(),
               hasInventory,
               stock,
@@ -716,9 +963,9 @@ const maxStock = hasInventory ? product.stock! : undefined;
 
             // Smooth feedback & micro-interaction
             if (submitBtn) {
-              submitBtn.classList.add('is-success');
+              submitBtn.classList.add("is-success");
               window.setTimeout(() => {
-                submitBtn.classList.remove('is-success');
+                submitBtn.classList.remove("is-success");
               }, 600);
             }
 
@@ -733,7 +980,10 @@ const maxStock = hasInventory ? product.stock! : undefined;
             }
           } catch (err) {
             if (feedback) {
-              feedback.textContent = err instanceof Error ? err.message : 'No se pudo agregar al carrito';
+              feedback.textContent =
+                err instanceof Error
+                  ? err.message
+                  : "No se pudo agregar al carrito";
               feedback.hidden = false;
               window.clearTimeout(feedbackTimeoutId);
               feedbackTimeoutId = window.setTimeout(() => {
@@ -746,7 +996,7 @@ const maxStock = hasInventory ? product.stock! : undefined;
 
       // CART BADGE LISTENER
       window.addEventListener(CART_EVENT, updateNavCartBadge);
-      window.addEventListener('storage', updateNavCartBadge);
+      window.addEventListener("storage", updateNavCartBadge);
       updateNavCartBadge();
       recalculate();
     </script>
@@ -754,9 +1004,19 @@ const maxStock = hasInventory ? product.stock! : undefined;
 </html>
 
 <style>
+  :global(html),
+  :global(body) {
+    overflow-x: hidden;
+  }
+
   :global(body) {
     margin: 0;
-    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+    font-family:
+      "Plus Jakarta Sans",
+      "Inter",
+      system-ui,
+      -apple-system,
+      sans-serif;
     background: #0b071a;
     color: #f1f0f8;
     --color-background: #0b071a;
@@ -770,10 +1030,16 @@ const maxStock = hasInventory ? product.stock! : undefined;
     margin: 0;
     background-color: #0b071a;
     color: #f1f0f8;
-    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+    font-family:
+      "Plus Jakarta Sans",
+      "Inter",
+      system-ui,
+      -apple-system,
+      sans-serif;
     position: relative;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
 
   /* BACKGROUND AMBIENT GLOW */
@@ -917,10 +1183,6 @@ const maxStock = hasInventory ? product.stock! : undefined;
   }
 
   @media (min-width: 880px) {
-    body {
-      overflow-x: hidden;
-    }
-
     .prod-page {
       height: 100vh;
       max-height: 100dvh;
@@ -1019,7 +1281,12 @@ const maxStock = hasInventory ? product.stock! : undefined;
   .prod-media-gradient {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, transparent 40%, rgba(0,0,0,0.45) 100%);
+    background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.15) 0%,
+      transparent 40%,
+      rgba(0, 0, 0, 0.45) 100%
+    );
     pointer-events: none;
   }
 
@@ -1059,7 +1326,7 @@ const maxStock = hasInventory ? product.stock! : undefined;
   }
 
   .prod-placeholder__letter {
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: "Plus Jakarta Sans", sans-serif;
     font-size: 5rem;
     font-weight: 800;
     line-height: 1;
@@ -1156,7 +1423,7 @@ const maxStock = hasInventory ? product.stock! : undefined;
   }
 
   .prod-title {
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: "Plus Jakarta Sans", sans-serif;
     font-size: clamp(1.85rem, 3.5vw, 2.35rem);
     font-weight: 800;
     line-height: 1.15;
@@ -1191,7 +1458,7 @@ const maxStock = hasInventory ? product.stock! : undefined;
   }
 
   .prod-price-val {
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: "Plus Jakarta Sans", sans-serif;
     font-size: 1.6rem;
     font-weight: 800;
     color: var(--color-accent, #9485ed);
@@ -1219,7 +1486,7 @@ const maxStock = hasInventory ? product.stock! : undefined;
   }
 
   .prod-section__title {
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: "Plus Jakarta Sans", sans-serif;
     font-size: 1rem;
     font-weight: 700;
     color: #ffffff;
@@ -1305,7 +1572,7 @@ const maxStock = hasInventory ? product.stock! : undefined;
   }
 
   .prod-stepper__input {
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: "Plus Jakarta Sans", sans-serif;
     font-size: 1.15rem;
     font-weight: 800;
     width: 3.25rem;
@@ -1529,18 +1796,24 @@ const maxStock = hasInventory ? product.stock! : undefined;
     box-shadow: 0 4px 14px rgba(148, 133, 237, 0.25);
   }
 
-  .prod-extra-item__input:checked + .prod-extra-item__box .prod-extra-item__checkbox {
+  .prod-extra-item__input:checked
+    + .prod-extra-item__box
+    .prod-extra-item__checkbox {
     background: var(--color-accent, #9485ed);
     border-color: var(--color-accent, #9485ed);
     color: #0b071a;
   }
 
-  .prod-extra-item__input:checked + .prod-extra-item__box .prod-extra-item__name {
+  .prod-extra-item__input:checked
+    + .prod-extra-item__box
+    .prod-extra-item__name {
     color: #ffffff;
     font-weight: 700;
   }
 
-  .prod-extra-item__input:checked + .prod-extra-item__box .prod-extra-item__price {
+  .prod-extra-item__input:checked
+    + .prod-extra-item__box
+    .prod-extra-item__price {
     background: var(--color-accent, #9485ed);
     color: #0b071a;
   }
@@ -1576,7 +1849,7 @@ const maxStock = hasInventory ? product.stock! : undefined;
   }
 
   .prod-checkout-total {
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: "Plus Jakarta Sans", sans-serif;
     font-size: 1.65rem;
     font-weight: 800;
     color: var(--color-accent, #9485ed);
@@ -1606,7 +1879,7 @@ const maxStock = hasInventory ? product.stock! : undefined;
     color: #ffffff;
     border: none;
     border-radius: 9999px;
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: "Plus Jakarta Sans", sans-serif;
     font-size: 1.05rem;
     font-weight: 800;
     cursor: pointer;
@@ -1703,8 +1976,6 @@ const maxStock = hasInventory ? product.stock! : undefined;
       transform: translateY(0);
     }
   }
-
-
 
   /* MOBILE RESPONSIVENESS */
   @media (max-width: 640px) {
