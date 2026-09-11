@@ -1,140 +1,143 @@
-# Delicious Burger — Sistema de comandas
+# Guía de Implementación para Nuevos Clientes (White-Label)
 
-POS y panel operativo para restaurante: mesas, domicilios, cocina, caja, inventario y reportes.
+Este repositorio es una plantilla (white-label) de un sistema POS y panel operativo para restaurantes (mesas, domicilios, cocina, caja, inventario y reportes).
 
-## Requisitos
+Sigue este paso a paso para desplegar y adaptar este sistema para un **nuevo cliente**.
 
-- Node.js >= 22.12
-- pnpm
-- Base de datos [Turso](https://turso.tech/) (libSQL)
+## 1. Preparar el Repositorio
 
-## Configuración local
+1. Clona este repositorio base para crear la carpeta del nuevo cliente:
+   ```bash
+   git clone https://github.com/mrkirbag/demo-comandas.git nombre-del-cliente
+   cd nombre-del-cliente
+   ```
+2. Elimina el historial de git (recomendado para que el cliente tenga su propio repositorio independiente):
+   ```bash
+   rm -rf .git
+   git init
+   git add .
+   git commit -m "Initial commit - Sistema Base"
+   ```
 
-1. Clona el repositorio e instala dependencias:
+## 2. Instalar Dependencias
+
+Asegúrate de tener **Node.js >= 22.12** y **pnpm** instalados.
 
 ```bash
 pnpm install
 ```
 
-2. Copia las variables de entorno:
+## 3. Configurar Base de Datos (Turso)
+
+El sistema utiliza SQLite a través de [Turso](https://turso.tech/).
+
+1. Crea una cuenta en Turso si no la tienes o inicia sesión.
+2. Crea una nueva base de datos exclusiva para este cliente:
+   ```bash
+   turso db create nombre-del-cliente-db
+   ```
+3. Obtén la URL y el Token de la base de datos:
+   ```bash
+   turso db show nombre-del-cliente-db --url
+   turso db tokens create nombre-del-cliente-db
+   ```
+
+## 4. Configurar Uploadthing (Imágenes de Productos)
+
+El sistema usa [Uploadthing](https://uploadthing.com/) para gestionar las imágenes cargadas.
+
+1. Crea una cuenta o inicia sesión en Uploadthing.
+2. Crea un nuevo proyecto (App) para este cliente.
+3. En el panel del proyecto, ve a la sección de **API Keys**.
+4. Copia el `UPLOADTHING_TOKEN`.
+
+## 5. Variables de Entorno (.env)
+
+Copia el archivo de ejemplo para crear tu `.env` local:
 
 ```bash
 cp .env.example .env
 ```
 
-3. Completa `.env`:
+Edita el `.env` y pega los datos obtenidos en los pasos anteriores:
 
-| Variable | Descripción |
-|----------|-------------|
-| `TURSO_URL` | URL de la base Turso (`libsql://...`) |
-| `TURSO_AUTH_TOKEN` | Token de autenticación Turso |
-| `JWT_SECRET` | Secreto para sesiones (mín. 32 caracteres aleatorios) |
+```env
+# Turso (libSQL) — base de datos
+TURSO_URL=libsql://nombre-del-cliente-db-tu-org.turso.io
+TURSO_AUTH_TOKEN=tu-turso-auth-token
 
-4. Inicializa la base de datos:
+# Sesiones JWT (mínimo 32 caracteres aleatorios)
+JWT_SECRET=genera-un-secreto-largo-y-aleatorio-aqui-12345
+
+# Imagenes en uploadthing
+UPLOADTHING_TOKEN=tu-uploadthing-token
+```
+
+## 6. Personalización (White-Label)
+
+Modifica los siguientes archivos para adaptar el sistema a la marca, colores y necesidades del nuevo cliente:
+
+### A. Branding y Colores (`src/data/brand.ts`)
+Aquí configuras la identidad visual y datos del negocio:
+- **`name`, `shortName`, `tagline`**: Nombres y eslogan del restaurante.
+- **`currency`**: Código y símbolo (ej. `COP` `$`, `USD` `$`, `VES` `Bs.`).
+- **`colors`**: Colores primarios, secundarios, acentos. (Soporta variables hexadecimales).
+- **`contact`**: Teléfono, dirección, redes sociales, horarios de apertura y cierre.
+- **`delivery`**: La plantilla del mensaje de WhatsApp automático cuando un pedido está listo.
+
+### B. Categorías de Productos e Inventario (`src/data/product-categories.ts`)
+Define las categorías que aparecerán en el menú público y en el panel.
+- Edita el array `productCategories` para las categorías de los platos (ej: Entradas, Platos Fuertes, Bebidas, Postres).
+- Edita el array `inventoryUnits` para las unidades de medida que usa el restaurante en su inventario (ej: Kilos, Litros, Cajas, Paquetes).
+
+### C. Assets Visuales (`public/brand/`)
+Reemplaza los archivos gráficos por los del cliente. Para que no tengas que cambiar el código, manten los nombres:
+- `logo.png`
+- `favicon.png`
+*(Nota: Si usas otros formatos como `.webp` o `.svg`, recuerda actualizar las rutas exactas dentro de `src/data/brand.ts`)*.
+
+## 7. Inicializar la Estructura de la Base de Datos
+
+Una vez configurado el `.env`, crea todas las tablas ejecutando las migraciones:
 
 ```bash
 pnpm db:migrate
 ```
 
-Esto crea el esquema desde `src/lib/db/db.sql` en bases nuevas y aplica migraciones incrementales en bases existentes.
+## 8. Sembrar Datos Iniciales (Seed)
 
-5. (Opcional) Datos iniciales — mesas y usuario admin:
+Para poder usar el sistema, necesitas las mesas por defecto y un usuario para iniciar sesión.
 
+Ejecuta el seed base para crear las mesas y el usuario administrador (`admin` / contrseña: `12345678`):
 ```bash
 pnpm db:seed
 ```
 
-6. Inicia el servidor de desarrollo:
+*(Opcional)* Si quieres mostrar el sistema con productos de demostración, ejecuta:
+```bash
+pnpm db:seed-products
+```
+
+> **Importante:** Una vez entregado el sistema, recuerda ingresar al panel y cambiar la contraseña del usuario `admin` o crear cuentas separadas por rol (Cajero, Mesero, Cocina).
+
+## 9. Iniciar el Proyecto Localmente
+
+Levanta el servidor de desarrollo para verificar que la configuración se aplicó correctamente:
 
 ```bash
 pnpm dev
 ```
 
-Abre `http://localhost:4321/login`.
+El sistema estará disponible en `http://localhost:4321`.
+Para ingresar al panel operativo, ve a `http://localhost:4321/login`.
 
-## Scripts disponibles
+---
 
-| Comando | Descripción |
-|---------|-------------|
-| `pnpm dev` | Servidor de desarrollo |
-| `pnpm build` | Build de producción |
-| `pnpm preview` | Vista previa del build |
-| `pnpm db:migrate` | Migraciones / esquema inicial |
-| `pnpm db:seed` | Mesas + usuario admin |
-| `pnpm test` | Tests automatizados |
+## 10. Despliegue en Producción (Netlify, Vercel, etc.)
 
-## Despliegue en Netlify
-
-### 1. Crear base Turso
-
-1. Crea una base en [Turso](https://turso.tech/).
-2. Obtén `TURSO_URL` y `TURSO_AUTH_TOKEN`.
-
-### 2. Conectar repositorio en Netlify
-
-1. Importa el repositorio en [Netlify](https://app.netlify.com/).
-2. El archivo `netlify.toml` ya define:
-   - **Build command:** `pnpm run build`
-   - **Publish directory:** `dist`
-   - **Node:** 22
-
-### 3. Variables de entorno en Netlify
-
-En **Site settings → Environment variables**, agrega:
-
-```
-TURSO_URL=libsql://tu-base.turso.io
-TURSO_AUTH_TOKEN=tu-token
-JWT_SECRET=un-secreto-largo-y-aleatorio
-```
-
-### 4. Migrar la base de datos
-
-Desde tu máquina local (con el `.env` apuntando a la base de producción):
-
-```bash
-pnpm db:migrate
-```
-
-En el primer deploy, esto crea todas las tablas automáticamente.
-
-### 5. Deploy
-
-Haz push a la rama conectada o ejecuta deploy manual. Netlify usará el adapter `@astrojs/netlify` para SSR.
-
-### Deploy manual con CLI
-
-```bash
-pnpm build
-npx netlify deploy --prod
-```
-
-> **Nota Windows:** el build local puede fallar al crear symlinks en `.netlify/`. En Netlify (Linux) no ocurre. Usa `netlify deploy` o CI para builds de producción.
-
-## Roles del sistema
-
-| Rol | Acceso |
-|-----|--------|
-| **Admin** | Panel completo: catálogo, inventario, reportes, usuarios, tasas |
-| **Cajero** | Caja, facturas, comandas, mesas, domicilios |
-| **Mesero** | Mesas, domicilios, comandas y tablero de cocina (marcar listo y entregado) |
-| **Cocina** | Tablero de cocina (redirige automáticamente a `/panel/cocina`) |
-
-## White-label
-
-Edita `src/data/brand.ts` para cambiar nombre, colores, logo y textos. Los assets van en `public/brand/`.
-
-## Seguridad
-
-- Sesiones JWT en cookie `httpOnly` (8 horas).
-- Rate limit en login: 5 intentos por IP cada 15 minutos.
-- Usuarios desactivados pierden acceso inmediato (validación en cada request).
-- Cambia las credenciales por defecto del seed antes de producción.
-
-## Tests
-
-```bash
-pnpm test
-```
-
-Incluye smoke tests del flujo operativo: comanda → cocina → cobro → cierre de caja.
+Cuando el sistema esté listo para el cliente:
+1. Sube este nuevo repositorio a tu cuenta de GitHub.
+2. Conéctalo a la plataforma de hosting (ej. Netlify).
+3. Configura en la plataforma **exactamente las mismas variables de entorno** que tienes en tu `.env`.
+4. El comando de compilación (build) es: `pnpm build`. (En Netlify, el archivo `netlify.toml` incluido ya se encarga de esto automáticamente).
+5. ¡Listo! El cliente ya tiene su propio sistema funcionando en la nube.

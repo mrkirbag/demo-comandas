@@ -27,4 +27,7 @@ export const env = {
   get uploadthingToken() {
     return pickEnv('UPLOADTHING_TOKEN', UPLOADTHING_TOKEN);
   },
+  get storeName() {
+    return process.env.STORE_NAME || 'tienda';
+  },
 } as const;

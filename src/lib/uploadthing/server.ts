@@ -58,9 +58,12 @@ export async function optimizeAndUploadImage(
   const optimized = await optimizeImageBuffer(Buffer.from(buffer), options);
 
   const webpName = toWebpName(options.name ?? inputNameFrom(input));
+  // Simulamos "carpetas" en UploadThing añadiendo el prefijo del negocio al archivo
+  const filePrefix = env.storeName.replace(/[^a-zA-Z0-9_-]/g, ''); 
+  const prefixedName = `${filePrefix}_${webpName}`;
 
   const result = await utapi.uploadFiles(
-    new UTFile([toUint8ArrayFromBuffer(optimized.buffer)], webpName, { type: 'image/webp' }),
+    new UTFile([toUint8ArrayFromBuffer(optimized.buffer)], prefixedName, { type: 'image/webp' }),
   );
 
   if (result.error || !result.data) {
@@ -82,4 +85,20 @@ export async function optimizeAndUploadImage(
  */
 export async function deleteImage(key: string): Promise<void> {
   await utapi.deleteFiles(key);
+}
+
+/**
+ * Elimina una imagen ya almacenada extrayendo el key desde su URL.
+ */
+export async function deleteImageByUrl(url: string): Promise<void> {
+  try {
+    const parsed = new URL(url);
+    const parts = parsed.pathname.split('/');
+    const key = parts[parts.length - 1];
+    if (key) {
+      await deleteImage(key);
+    }
+  } catch {
+    // URL inválida, no se puede borrar
+  }
 }

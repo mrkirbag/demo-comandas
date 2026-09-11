@@ -3,6 +3,7 @@ import { createId } from '@/lib/utils/id';
 
 import { db } from './client';
 import { getInventoryItemById } from './inventory';
+import { deleteImageByUrl } from '@/lib/uploadthing/server';
 import type { SqlArgs } from './sql';
 import type { Product } from './types';
 
@@ -292,6 +293,10 @@ export async function updateCatalogProduct(
   }
 
   if (input.image_url !== undefined) {
+    if (current.image_url && current.image_url !== input.image_url) {
+      // Borrar asíncronamente la imagen vieja
+      deleteImageByUrl(current.image_url).catch(console.error);
+    }
     fields.push('image_url = ?');
     args.push(input.image_url);
   }
@@ -344,12 +349,21 @@ export async function updateCatalogProduct(
 }
 
 export async function deleteCatalogProduct(id: string): Promise<boolean> {
+  const current = await getCatalogProductById(id);
+
   const result = await db.execute({
     sql: 'DELETE FROM products WHERE id = ? AND requires_inventory = 0',
     args: [id],
   });
 
-  return result.rowsAffected > 0;
+  const success = result.rowsAffected > 0;
+  
+  if (success && current?.image_url) {
+    // Borrar asíncronamente la imagen asociada
+    deleteImageByUrl(current.image_url).catch(console.error);
+  }
+
+  return success;
 }
 
 /** Productos activos del menú por IDs (para adicionales de comanda). */
