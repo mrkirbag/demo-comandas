@@ -80,7 +80,7 @@ async function migratePaymentMethods(db: Client): Promise<void> {
       CREATE TABLE orders_new (
         id TEXT PRIMARY KEY,
         table_id TEXT,
-        order_type TEXT NOT NULL DEFAULT 'mesa',
+        order_type TEXT NOT NULL DEFAULT 'mesa' CHECK(order_type IN ('mesa', 'delivery', 'para_llevar')),
         user_id TEXT NOT NULL,
         cash_register_id TEXT,
         status TEXT CHECK(status IN ('pendiente', 'cocina', 'listo', 'entregado', 'pagado', 'cancelado')) DEFAULT 'pendiente',
@@ -180,7 +180,7 @@ async function migrateDeliverySupport(db: Client): Promise<void> {
     CREATE TABLE orders_new (
       id TEXT PRIMARY KEY,
       table_id TEXT,
-      order_type TEXT NOT NULL DEFAULT 'mesa',
+      order_type TEXT NOT NULL DEFAULT 'mesa' CHECK(order_type IN ('mesa', 'delivery', 'para_llevar')),
       user_id TEXT NOT NULL,
       cash_register_id TEXT,
       status TEXT CHECK(status IN ('pendiente', 'cocina', 'listo', 'entregado', 'pagado', 'cancelado')) DEFAULT 'pendiente',
@@ -269,6 +269,72 @@ async function migrateDeliveryFee(db: Client): Promise<void> {
     `ALTER TABLE orders ADD COLUMN delivery_fee REAL DEFAULT 0.0`,
   );
   console.log('✓ orders.delivery_fee');
+}
+
+async function migrateOrderTypeTakeaway(db: Client): Promise<void> {
+  if (!(await tableExists(db, 'orders'))) {
+    return;
+  }
+
+  const ordersSql = await getTableSql(db, 'orders');
+  if (!ordersSql) return;
+
+  const hasOldCheck = ordersSql.includes("CHECK(order_type IN ('mesa', 'delivery'))");
+  const supportsTakeaway = ordersSql.includes("'para_llevar'");
+
+  if (!hasOldCheck && supportsTakeaway) {
+    return;
+  }
+
+  await db.execute('PRAGMA foreign_keys = OFF');
+
+  await db.execute(`
+    CREATE TABLE orders_new (
+      id TEXT PRIMARY KEY,
+      table_id TEXT,
+      order_type TEXT NOT NULL DEFAULT 'mesa' CHECK(order_type IN ('mesa', 'delivery', 'para_llevar')),
+      user_id TEXT NOT NULL,
+      cash_register_id TEXT,
+      status TEXT CHECK(status IN ('pendiente', 'cocina', 'listo', 'entregado', 'pagado', 'cancelado')) DEFAULT 'pendiente',
+      total REAL DEFAULT 0.0,
+      payment_method TEXT CHECK(payment_method IN ('efectivo', 'nequi', 'bancolombia', 'punto_de_venta', 'pago_movil', 'usd_efectivo', 'zelle', 'binance_usdt', 'divisas')),
+      foreign_currency TEXT CHECK(foreign_currency IS NULL OR foreign_currency IN ('usd', 'bs')),
+      foreign_amount REAL,
+      delivery_payment_timing TEXT CHECK(delivery_payment_timing IS NULL OR delivery_payment_timing IN ('on_delivery', 'prepaid')),
+      customer_name TEXT,
+      customer_phone TEXT,
+      delivery_address TEXT,
+      delivery_notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      delivery_fee REAL DEFAULT 0.0,
+      FOREIGN KEY(table_id) REFERENCES tables(id),
+      FOREIGN KEY(user_id) REFERENCES users(id),
+      FOREIGN KEY(cash_register_id) REFERENCES cash_registers(id)
+    )
+  `);
+
+  await db.execute(`
+    INSERT INTO orders_new (
+      id, table_id, order_type, user_id, cash_register_id, status, total,
+      payment_method, foreign_currency, foreign_amount,
+      delivery_payment_timing, customer_name, customer_phone,
+      delivery_address, delivery_notes, created_at, updated_at, delivery_fee
+    )
+    SELECT
+      id, table_id, order_type, user_id, cash_register_id, status, total,
+      payment_method, foreign_currency, foreign_amount,
+      delivery_payment_timing, customer_name, customer_phone,
+      delivery_address, delivery_notes, created_at, updated_at, delivery_fee
+    FROM orders
+  `);
+
+  await db.execute('DROP TABLE orders');
+  await db.execute('ALTER TABLE orders_new RENAME TO orders');
+
+  await db.execute('PRAGMA foreign_keys = ON');
+
+  console.log('✓ orders.order_type check constraint (mesa, delivery, para_llevar)');
 }
 
 function parseSqlStatements(sql: string): string[] {
@@ -454,6 +520,7 @@ export async function runMigrations(dbClient?: Client): Promise<void> {
   await migrateDeliveryPaymentTiming(db);
   await migrateDeliveryFee(db);
   await migratePaymentMethods(db);
+  await migrateOrderTypeTakeaway(db);
 
   if (await tableExists(db, 'order_items') && !(await columnExists(db, 'order_items', 'extras'))) {
     await db.execute('ALTER TABLE order_items ADD COLUMN extras TEXT');
