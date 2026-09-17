@@ -47,7 +47,7 @@ export async function optimizeImageBuffer(
     quality = DEFAULT_QUALITY,
   } = options;
 
-  let pipeline = sharp(input).rotate();
+  let pipeline = sharp(input).rotate().toColorspace('srgb');
 
   const metadata = await pipeline.metadata();
   const shouldResize =
@@ -64,7 +64,8 @@ export async function optimizeImageBuffer(
     });
   }
 
-  pipeline = pipeline.webp({ quality, effort: 4 });
+  // force: true asegura que sí o sí lo trate como WebP
+  pipeline = pipeline.webp({ quality, effort: 4, force: true });
 
   const output = await pipeline.toBuffer({ resolveWithObject: true });
 
