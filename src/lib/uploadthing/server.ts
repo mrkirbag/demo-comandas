@@ -88,13 +88,28 @@ export async function deleteImage(key: string): Promise<void> {
 }
 
 /**
- * Elimina una imagen ya almacenada extrayendo el key desde su URL.
+ * Elimina una imagen ya almacenada extrayendo el key desde su URL (soporta URLs
+ * directas de UploadThing y URLs proxeadas /api/img?key=...).
  */
 export async function deleteImageByUrl(url: string): Promise<void> {
   try {
-    const parsed = new URL(url);
-    const parts = parsed.pathname.split('/');
-    const key = parts[parts.length - 1];
+    let key: string | null = null;
+    const trimmed = url.trim();
+
+    // Si ya es directamente una clave (sin / ni ?)
+    if (!trimmed.includes('/') && !trimmed.includes('?')) {
+      key = trimmed;
+    } else {
+      const parsed = new URL(trimmed, 'http://localhost');
+      const queryKey = parsed.searchParams.get('key');
+      if (queryKey) {
+        key = queryKey;
+      } else {
+        const parts = parsed.pathname.split('/').filter(Boolean);
+        key = parts[parts.length - 1] ?? null;
+      }
+    }
+
     if (key) {
       await deleteImage(key);
     }

@@ -18,6 +18,7 @@ import { useInventory } from '@/lib/hooks/queries/useInventory';
 import { useProducts } from '@/lib/hooks/queries/useProducts';
 import { queryKeys } from '@/lib/query/keys';
 import { withAppProviders } from '@/lib/providers/withAppProviders';
+import { getProxiedImageUrl } from '@/lib/utils/images';
 
 import './ProductsManager.css';
 
@@ -334,7 +335,7 @@ function ProductsManager() {
                   <td data-label="Producto">
                     <div className="catalog-manager__product-info">
                       {product.image_url ? (
-                        <img src={product.image_url} alt="" className="catalog-manager__thumbnail" loading="lazy" />
+                        <img src={getProxiedImageUrl(product.image_url)} alt="" className="catalog-manager__thumbnail" loading="lazy" />
                       ) : (
                         <div className="catalog-manager__thumbnail-placeholder">
                           <ImageIcon size={20} />
@@ -437,7 +438,7 @@ function ProductsManager() {
             <div className="catalog-manager__image-upload">
               {form.image_url ? (
                 <div className="catalog-manager__image-preview">
-                  <img src={form.image_url} alt="Vista previa" />
+                  <img src={getProxiedImageUrl(form.image_url)} alt="Vista previa" />
                   <button 
                     type="button" 
                     className="catalog-manager__image-clear"

@@ -14,6 +14,7 @@ import {
   getDefaultSelections,
 } from "@/lib/orders/item-preferences";
 import { formatCop } from "@/lib/utils/currency";
+import { getProxiedImageUrl } from "@/lib/utils/images";
 import { getExchangeRates } from "@/lib/db/exchange-rates";
 import { isStoreOpen } from "@/lib/utils/schedule";
 import CartDrawer from "@/components/cart/CartDrawer";
@@ -31,6 +32,8 @@ const product = await getActiveMenuProductById(id);
 if (!product) {
   return Astro.redirect("/");
 }
+
+const productImageUrl = getProxiedImageUrl(product.image_url);
 
 const [allProducts, exchangeRates] = await Promise.all([
   listActiveMenuProducts(),
@@ -154,9 +157,9 @@ const maxStock = hasInventory ? product.stock! : undefined;
           <div class="prod-media-card">
             <div class="prod-media-container">
               {
-                product.image_url ? (
+                productImageUrl ? (
                   <img
-                    src={product.image_url}
+                    src={productImageUrl}
                     alt={product.name}
                     class="prod-media-img"
                     loading="eager"
@@ -612,7 +615,7 @@ const maxStock = hasInventory ? product.stock! : undefined;
         productId: product.id,
         productName: product.name,
         productPrice: product.price,
-        productImageUrl: product.image_url,
+        productImageUrl: productImageUrl || null,
         singleGroupIds,
         multipleGroupIds,
         exchangeRates,

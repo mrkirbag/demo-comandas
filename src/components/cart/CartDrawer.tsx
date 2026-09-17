@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 
 import { isStoreOpen } from '@/lib/utils/schedule';
+import { getProxiedImageUrl } from '@/lib/utils/images';
 
 import {
   CART_EVENT,
@@ -692,7 +693,7 @@ export default function CartDrawer({
                           <div className="cart-item__media">
                             {item.imageUrl ? (
                               <img
-                                src={item.imageUrl}
+                                src={getProxiedImageUrl(item.imageUrl)}
                                 alt={item.name}
                                 className="cart-item__img"
                                 loading="lazy"

@@ -1,6 +1,7 @@
 ---
 import { formatCop } from '@/lib/utils/currency';
 import { getMenuCategoryLabel } from '@/data/product-categories';
+import { getProxiedImageUrl } from '@/lib/utils/images';
 import type { Product } from '@/lib/db/types';
 
 export interface Props {
@@ -20,7 +21,8 @@ const id = Astro.props.id ?? product?.id ?? '';
 const name = Astro.props.name ?? product?.name ?? '';
 const price = Astro.props.price ?? product?.price ?? 0;
 const description = Astro.props.description !== undefined ? Astro.props.description : (product?.description ?? null);
-const imageUrl = Astro.props.imageUrl !== undefined ? Astro.props.imageUrl : (product?.image_url ?? null);
+const rawImageUrl = Astro.props.imageUrl !== undefined ? Astro.props.imageUrl : (product?.image_url ?? null);
+const imageUrl = getProxiedImageUrl(rawImageUrl);
 const category = Astro.props.category ?? product?.category;
 const categoryLabel = badge ?? (category ? getMenuCategoryLabel(category) : undefined);
 const isOutOfStock = Boolean(
