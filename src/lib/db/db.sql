@@ -19,6 +19,7 @@ CREATE TABLE tables (
 CREATE TABLE products (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
+    slug TEXT UNIQUE,
     price REAL NOT NULL,
     category TEXT NOT NULL,
     image_url TEXT,

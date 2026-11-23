@@ -18,6 +18,7 @@ export default defineConfig({
   devToolbar: {
     enabled: false
   },
+  prefetch: false,
   vite: {
     resolve: {
       alias: {

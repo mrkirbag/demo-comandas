@@ -20,6 +20,7 @@ export type Table = {
 export type Product = {
   id: string;
   name: string;
+  slug?: string | null;
   price: number;
   category: string;
   image_url?: string | null;

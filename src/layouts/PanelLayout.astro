@@ -1,5 +1,4 @@
 ---
-import { ClientRouter } from 'astro:transitions';
 import Navbar from '@/components/layout/Navbar';
 import { brand, brandCssVariablesStyle } from '@/data/brand';
 import '@/styles/global.css';
@@ -86,7 +85,6 @@ const currentPath = Astro.url.pathname;
       rel="stylesheet"
     />
     <title>{title}</title>
-    <ClientRouter />
     <style is:global set:html={brandCssVariablesStyle()}></style>
   </head>
   <body>

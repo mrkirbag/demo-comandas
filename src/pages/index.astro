@@ -1,8 +1,10 @@
 ---
 import { brand, brandCssVariablesStyle } from '@/data/brand';
-import { menuCategories } from '@/data/product-categories';
+import { getMenuCategoryLabel, menuCategories } from '@/data/product-categories';
 import { listActiveMenuProducts } from '@/lib/db/products';
 import { getExchangeRates } from '@/lib/db/exchange-rates';
+import { formatCop } from '@/lib/utils/currency';
+import { getProxiedImageUrl } from '@/lib/utils/images';
 import { isStoreOpen } from '@/lib/utils/schedule';
 import Card from '@/components/Card.astro';
 import CartDrawer from '@/components/cart/CartDrawer';
@@ -28,6 +30,35 @@ const categories = menuCategories
 
 const hasProducts = products.length > 0;
 const title = `${brand.name} | Menú`;
+
+const isAvailableProduct = (p: (typeof products)[number]) =>
+  !(p.has_inventory && p.stock !== null && p.stock !== undefined && p.stock <= 0);
+
+const preferredHeroCategories = ['hamburguesas', 'perros-calientes', 'entradas'];
+const featuredProduct =
+  products.find(
+    (p) =>
+      isAvailableProduct(p) &&
+      preferredHeroCategories.includes(p.category) &&
+      Boolean(getProxiedImageUrl(p.image_url)),
+  ) ??
+  products.find((p) => isAvailableProduct(p) && Boolean(getProxiedImageUrl(p.image_url))) ??
+  products.find((p) => isAvailableProduct(p)) ??
+  products[0] ??
+  null;
+
+const featuredImageUrl = featuredProduct
+  ? getProxiedImageUrl(featuredProduct.image_url)
+  : null;
+
+const highlightProducts = products
+  .filter(
+    (p) =>
+      isAvailableProduct(p) &&
+      p.id !== featuredProduct?.id &&
+      p.category !== 'adicionales',
+  )
+  .slice(0, 3);
 ---
 
 <!doctype html>
@@ -36,7 +67,10 @@ const title = `${brand.name} | Menú`;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
-    <meta name="description" content={`${brand.name} — Menú digital de restaurante. ${brand.tagline}`} />
+    <meta
+      name="description"
+      content={`${brand.name} — Menú digital de restaurante. ${brand.tagline}`}
+    />
     <link rel="icon" type="image/webp" href={brand.assets.favicon} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -47,88 +81,354 @@ const title = `${brand.name} | Menú`;
     <style is:global set:html={brandCssVariablesStyle()}></style>
   </head>
   <body>
-    <!-- SELECTOR DE MONEDA FLOTANTE (FIXED CORNER) -->
-    <CurrencySwitch rates={exchangeRates} />
+    <!-- BARRA DE NAVEGACIÓN SUPERIOR DEL RESTAURANTE -->
+    <nav class="site-nav" aria-label="Navegación principal">
+      <div class="site-nav__inner">
+        <a href="#top" class="site-nav__brand">
+          <span class="site-nav__logo-wrap">
+            <img
+              src={brand.assets.logo}
+              alt={brand.name}
+              class="site-nav__logo"
+              width={36}
+              height={36}
+            />
+          </span>
+          <span class="site-nav__brand-text">
+            <span class="site-nav__brand-name">{brand.name}</span>
+            <span class="site-nav__brand-sub">Carta Digital</span>
+          </span>
+        </a>
 
-    <!-- HERO DE RESTAURANTE -->
-    <header class="menu-hero">
-      <div class="menu-hero__ambient" aria-hidden="true"></div>
-      <div class="menu-hero__inner">
-        <div class="menu-hero__topbar">
+        <div class="site-nav__actions">
           <div
             class={`menu-hero__status ${storeIsOpen ? 'menu-hero__status--open' : 'menu-hero__status--closed'}`}
             id="store-status-badge"
             data-open-hour={brand.contact.openingHour || ''}
             data-close-hour={brand.contact.closingHour || ''}
           >
-            <span class={`menu-hero__status-dot ${storeIsOpen ? '' : 'menu-hero__status-dot--closed'}`} aria-hidden="true"></span>
-            <span id="store-status-text">{storeIsOpen ? 'Abierto para pedidos' : 'Cerrado para pedidos'}</span>
-            {brand.contact.openingHour && brand.contact.closingHour && (
-              <span class="menu-hero__status-hours">
-                ({brand.contact.openingHour} - {brand.contact.closingHour})
-              </span>
-            )}
+            <span
+              class={`menu-hero__status-dot ${storeIsOpen ? '' : 'menu-hero__status-dot--closed'}`}
+              aria-hidden="true"
+            ></span>
+            <span id="store-status-text">
+              {storeIsOpen ? 'Abierto ahora' : 'Cerrado'}
+            </span>
           </div>
 
-          {
-            brand.contact.city && brand.contact.country && (
-              <div class="menu-hero__location">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                  <circle cx="12" cy="10" r="3"></circle>
-                </svg>
-                <span>{brand.contact.city}, {brand.contact.country}</span>
-              </div>
-            )
-          }
+          <CurrencySwitch rates={exchangeRates} class="site-nav__currency" />
+
+          <button
+            type="button"
+            class="site-nav__cart-btn"
+            id="nav-cart-btn"
+            aria-label="Abrir mi pedido"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.1"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <path d="M16 10a4 4 0 0 1-8 0"></path>
+            </svg>
+            <span class="site-nav__cart-label">Mi pedido</span>
+            <span class="site-nav__cart-badge" id="nav-cart-badge" hidden>0</span>
+          </button>
         </div>
+      </div>
+    </nav>
 
-        <div class="menu-hero__brand">
-          <div class="menu-hero__logo-wrap">
-            <img src={brand.assets.logo} alt={brand.name} class="menu-hero__logo" width={84} height={84} />
-          </div>
-          <div class="menu-hero__copy">
+    <!-- HERO CULINARIO -->
+    <header class="menu-hero" id="top">
+      <div class="menu-hero__ambient" aria-hidden="true"></div>
+      <div class="menu-hero__inner">
+        <div class="menu-hero__grid">
+          <!-- COLUMNA IZQUIERDA: IDENTIDAD Y SERVICIO -->
+          <div class="menu-hero__content">
+            <div class="menu-hero__eyebrow">
+              <svg
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path>
+                <path d="M7 2v20"></path>
+                <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path>
+              </svg>
+              <span>Cocina fresca &bull; Pedidos en línea</span>
+            </div>
+
             <h1 class="menu-hero__name">{brand.name}</h1>
             <p class="menu-hero__tagline">{brand.tagline}</p>
+
+            <!-- DATOS CLAVE DEL RESTAURANTE -->
+            <div class="menu-hero__meta-grid">
+              {
+                brand.contact.openingHour && brand.contact.closingHour && (
+                  <div class="menu-hero__meta-item">
+                    <span class="menu-hero__meta-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                      </svg>
+                    </span>
+                    <div>
+                      <span class="menu-hero__meta-label">Horario</span>
+                      <span class="menu-hero__meta-val">
+                        {brand.contact.openingHour} - {brand.contact.closingHour}
+                      </span>
+                    </div>
+                  </div>
+                )
+              }
+
+              {
+                (brand.contact.address || brand.contact.city) && (
+                  <div class="menu-hero__meta-item">
+                    <span class="menu-hero__meta-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                      </svg>
+                    </span>
+                    <div>
+                      <span class="menu-hero__meta-label">Ubicación</span>
+                      <span class="menu-hero__meta-val">
+                        {[brand.contact.address, brand.contact.city]
+                          .filter(Boolean)
+                          .join(', ')}
+                      </span>
+                    </div>
+                  </div>
+                )
+              }
+
+              <div class="menu-hero__meta-item">
+                <span class="menu-hero__meta-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="1" y="3" width="15" height="13"></rect>
+                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                    <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                    <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                  </svg>
+                </span>
+                <div>
+                  <span class="menu-hero__meta-label">Modalidad</span>
+                  <span class="menu-hero__meta-val">Domicilio y Retiro</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="menu-hero__cta-row">
+              <a href="#menu-controls" class="menu-hero__cta-primary">
+                <span>Explorar la carta</span>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 5v14M19 12l-7 7-7-7"></path>
+                </svg>
+              </a>
+              <button
+                type="button"
+                class="menu-hero__cta-secondary"
+                id="hero-open-cart"
+              >
+                <span>Ver mi pedido</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- COLUMNA DERECHA: PLATO DESTACADO DE LA CASA -->
+          <div class="menu-hero__showcase">
+            {
+              featuredProduct ? (
+                <a
+                  href={`/producto/${featuredProduct.slug || featuredProduct.id}`}
+                  class="hero-dish"
+                  aria-label={`Ver plato recomendado: ${featuredProduct.name}`}
+                >
+                  <div class="hero-dish__media">
+                    {featuredImageUrl ? (
+                      <img
+                        src={featuredImageUrl}
+                        alt={featuredProduct.name}
+                        class="hero-dish__img"
+                        loading="eager"
+                      />
+                    ) : (
+                      <div class="hero-dish__placeholder" aria-hidden="true">
+                        <span class="hero-dish__placeholder-letter">
+                          {featuredProduct.name.trim().charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <div class="hero-dish__overlay" aria-hidden="true"></div>
+                    <span class="hero-dish__tag">Recomendado de la casa</span>
+                  </div>
+
+                  <div class="hero-dish__body">
+                    <div class="hero-dish__top">
+                      <span class="hero-dish__category">
+                        {getMenuCategoryLabel(featuredProduct.category)}
+                      </span>
+                      <span
+                        class="hero-dish__price"
+                        data-price-cop={featuredProduct.price}
+                      >
+                        {formatCop(featuredProduct.price)}
+                      </span>
+                    </div>
+                    <h2 class="hero-dish__title">{featuredProduct.name}</h2>
+                    {featuredProduct.description && (
+                      <p class="hero-dish__desc">{featuredProduct.description}</p>
+                    )}
+                    <div class="hero-dish__action">
+                      <span>Personalizar y ordenar</span>
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M5 12h14M12 5l7 7-7 7"></path>
+                      </svg>
+                    </div>
+                  </div>
+                </a>
+              ) : (
+                <div class="hero-dish hero-dish--empty">
+                  <div class="hero-dish__body">
+                    <span class="hero-dish__tag">Nuestra Cocina</span>
+                    <h2 class="hero-dish__title">Preparando el menú de hoy</h2>
+                    <p class="hero-dish__desc">
+                      Muy pronto tendrás disponibles nuestros platos especiales listos para pedir.
+                    </p>
+                  </div>
+                </div>
+              )
+            }
           </div>
         </div>
       </div>
     </header>
 
-    <main class="menu">
-      <!-- BARRA DE BÚSQUEDA Y CATEGORÍAS -->
-      <section class="menu__controls">
-        <div class="menu__controls-inner">
-          <div class="menu__search-box">
-            <span class="menu__search-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-            </span>
-            <input
-              id="menu-search"
-              type="search"
-              placeholder="Buscar en el menú (ej. hamburguesa, papas, bebida)..."
-              aria-label="Buscar un producto en el menú"
-              autocomplete="off"
-            />
-          </div>
+    <!-- ACORDEÓN STICKY DE BÚSQUEDA Y CATEGORÍAS -->
+    <section class="menu__controls" id="menu-controls" aria-label="Filtros del menú">
+      <div class="menu__controls-inner">
+        <button
+          type="button"
+          class="menu__accordion-toggle"
+          id="menu-controls-toggle"
+          aria-expanded="true"
+          aria-controls="menu-controls-panel"
+        >
+          <span class="menu__accordion-title">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <span>Buscar y categorías</span>
+          </span>
+          <span class="menu__accordion-right">
+            <span class="menu__accordion-hint" id="menu-controls-hint">Ocultar</span>
+            <svg class="menu__accordion-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </span>
+        </button>
 
-          {
-            categories.length > 0 && (
-              <nav class="menu__categories" aria-label="Categorías del menú">
-                {categories.map((category) => (
-                  <a class="menu__category-chip" href={`#${category.id}`}>
-                    <span class="menu__category-name">{category.label}</span>
-                    <span class="menu__category-count">{category.products.length}</span>
+        <div class="menu__controls-panel" id="menu-controls-panel">
+          <div class="menu__controls-panel-inner">
+            <div class="menu__search-box">
+              <span class="menu__search-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </span>
+              <input
+                id="menu-search"
+                type="search"
+                placeholder="¿Qué se te antoja hoy? Busca hamburguesas, perros, bebidas..."
+                aria-label="Buscar un producto en el menú"
+                autocomplete="off"
+              />
+              <button
+                type="button"
+                id="menu-search-clear"
+                class="menu__search-clear"
+                aria-label="Limpiar búsqueda"
+                hidden
+              >
+                &times;
+              </button>
+            </div>
+
+            {
+              categories.length > 0 && (
+                <nav class="menu__categories" aria-label="Categorías del menú">
+                  <a class="menu__category-chip menu__category-chip--active" href="#menu-sections" data-cat-link="all">
+                    <span class="menu__category-name">Todo</span>
+                    <span class="menu__category-count">{products.length}</span>
                   </a>
-                ))}
-              </nav>
-            )
-          }
+                  {categories.map((category) => (
+                    <a class="menu__category-chip" href={`#${category.id}`} data-cat-link={category.id}>
+                      <span class="menu__category-name">{category.label}</span>
+                      <span class="menu__category-count">{category.products.length}</span>
+                    </a>
+                  ))}
+                </nav>
+              )
+            }
+          </div>
         </div>
-      </section>
+      </div>
+    </section>
+
+    <main class="menu">
+      <!-- SUGERENCIAS RÁPIDAS (SE OCULTA AL BUSCAR) -->
+      {
+        highlightProducts.length > 0 && (
+          <section class="menu-highlights" id="menu-highlights" aria-label="Sugerencias del chef">
+            <div class="menu-highlights__header">
+              <h2 class="menu-highlights__title">Sugerencias para hoy</h2>
+              <span class="menu-highlights__sub">Elige rápido o explora por categoría</span>
+            </div>
+            <div class="menu-highlights__grid">
+              {highlightProducts.map((item) => {
+                const thumb = getProxiedImageUrl(item.image_url);
+                return (
+                  <a href={`/producto/${item.slug || item.id}`} class="highlight-pill">
+                    <div class="highlight-pill__media">
+                      {thumb ? (
+                        <img src={thumb} alt={item.name} loading="lazy" />
+                      ) : (
+                        <span>{item.name.trim().charAt(0).toUpperCase()}</span>
+                      )}
+                    </div>
+                    <div class="highlight-pill__info">
+                      <span class="highlight-pill__cat">
+                        {getMenuCategoryLabel(item.category)}
+                      </span>
+                      <strong class="highlight-pill__name">{item.name}</strong>
+                      <span class="highlight-pill__price" data-price-cop={item.price}>
+                        {formatCop(item.price)}
+                      </span>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </section>
+        )
+      }
 
       <!-- SECCIÓN SIN RESULTADOS DE BÚSQUEDA -->
       <div class="menu__no-results" id="menu-no-results" hidden>
@@ -143,7 +443,7 @@ const title = `${brand.name} | Menú`;
         <p>Prueba buscando con otro término o explora las categorías del restaurante.</p>
       </div>
 
-      <!-- LISTADO DE SECCIONES -->
+      <!-- LISTADO DE SECCIONES DEL MENÚ -->
       {
         !hasProducts ? (
           <div class="menu__empty">
@@ -159,7 +459,8 @@ const title = `${brand.name} | Menú`;
                   <div class="menu-section__title-group">
                     <h2 class="menu-section__title">{category.label}</h2>
                     <span class="menu-section__badge">
-                      {category.products.length} {category.products.length === 1 ? 'opción' : 'opciones'}
+                      {category.products.length}{' '}
+                      {category.products.length === 1 ? 'opción' : 'opciones'}
                     </span>
                   </div>
                   <div class="menu-section__line" aria-hidden="true"></div>
@@ -177,6 +478,64 @@ const title = `${brand.name} | Menú`;
       }
     </main>
 
+    <!-- PIE DE PÁGINA DEL RESTAURANTE -->
+    <footer class="site-footer">
+      <div class="site-footer__inner">
+        <div class="site-footer__brand">
+          <img
+            src={brand.assets.logo}
+            alt={brand.name}
+            width={44}
+            height={44}
+            class="site-footer__logo"
+          />
+          <div>
+            <h3 class="site-footer__name">{brand.name}</h3>
+            <p class="site-footer__tagline">{brand.tagline}</p>
+          </div>
+        </div>
+
+        <div class="site-footer__cols">
+          <div class="site-footer__col">
+            <h4>Ubicación y Horario</h4>
+            {
+              (brand.contact.address || brand.contact.city) && (
+                <p>
+                  {[brand.contact.address, brand.contact.city, brand.contact.country]
+                    .filter(Boolean)
+                    .join(', ')}
+                </p>
+              )
+            }
+            {
+              brand.contact.openingHour && brand.contact.closingHour && (
+                <p>
+                  Todos los días: {brand.contact.openingHour} - {brand.contact.closingHour}
+                </p>
+              )
+            }
+          </div>
+
+          <div class="site-footer__col">
+            <h4>Contacto</h4>
+            {brand.contact.phone && <p>Tel / WhatsApp: {brand.contact.phone}</p>}
+            {brand.contact.instagram && <p>Instagram: {brand.contact.instagram}</p>}
+          </div>
+
+          <div class="site-footer__col">
+            <h4>Accesos</h4>
+            <div class="site-footer__links">
+              <a href="#menu-controls">Ver la carta</a>
+              <button type="button" id="footer-open-cart" class="site-footer__link-btn">
+                Mi pedido actual
+              </button>
+              <a href="/login">Acceso personal</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+
     <!-- CARRITO / PEDIDO LATERAL REACT COMPONENT -->
     <CartDrawer
       client:load
@@ -188,37 +547,147 @@ const title = `${brand.name} | Menú`;
       closingHour={brand.contact.closingHour}
     />
 
-
-
     <script>
+      import {
+        CART_STORAGE_KEY,
+        CART_EVENT,
+        openCartDrawer,
+      } from '@/lib/cart';
+
       const search = document.getElementById('menu-search') as HTMLInputElement | null;
+      const searchClear = document.getElementById('menu-search-clear') as HTMLButtonElement | null;
+      const controlsToggle = document.getElementById('menu-controls-toggle') as HTMLButtonElement | null;
+      const controlsPanel = document.getElementById('menu-controls-panel') as HTMLElement | null;
+      const controlsHint = document.getElementById('menu-controls-hint') as HTMLElement | null;
       const sections = Array.from(document.querySelectorAll<HTMLElement>('[data-category]'));
       const cards = Array.from(document.querySelectorAll<HTMLElement>('.menu-card'));
       const noResults = document.getElementById('menu-no-results') as HTMLElement | null;
+      const highlights = document.getElementById('menu-highlights') as HTMLElement | null;
+      const categoryLinks = Array.from(
+        document.querySelectorAll<HTMLAnchorElement>('[data-cat-link]'),
+      );
 
-      if (search) {
-        search.addEventListener('input', () => {
-          const query = search.value.trim().toLowerCase();
+      // Acordeón de buscador y categorías
+      function setControlsOpen(open: boolean) {
+        if (!controlsToggle || !controlsPanel) return;
+        controlsToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        controlsPanel.classList.toggle('menu__controls-panel--collapsed', !open);
+        if (controlsHint) {
+          controlsHint.textContent = open ? 'Ocultar' : 'Mostrar';
+        }
+      }
 
-          cards.forEach((card) => {
-            const name = card.dataset.name ?? '';
-            const match = !query || name.includes(query);
-            card.hidden = !match;
-          });
+      controlsToggle?.addEventListener('click', () => {
+        const isExpanded = controlsToggle.getAttribute('aria-expanded') === 'true';
+        setControlsOpen(!isExpanded);
+      });
 
-          let visibleSectionCount = 0;
-          sections.forEach((section) => {
-            const visible = Array.from(
-              section.querySelectorAll<HTMLElement>('.menu-card'),
-            ).some((card) => !card.hidden);
-            section.hidden = !visible;
-            if (visible) visibleSectionCount++;
-          });
+      // Botones para abrir el carrito lateral
+      const navCartBtn = document.getElementById('nav-cart-btn');
+      const heroOpenCart = document.getElementById('hero-open-cart');
+      const footerOpenCart = document.getElementById('footer-open-cart');
+      const navCartBadge = document.getElementById('nav-cart-badge');
 
-          if (noResults) {
-            noResults.hidden = visibleSectionCount > 0 || !query;
+      [navCartBtn, heroOpenCart, footerOpenCart].forEach((btn) => {
+        btn?.addEventListener('click', () => openCartDrawer());
+      });
+
+      function updateNavCartBadge() {
+        if (!navCartBadge) return;
+        try {
+          const raw = window.localStorage.getItem(CART_STORAGE_KEY);
+          if (!raw) {
+            navCartBadge.hidden = true;
+            return;
           }
+          const items = JSON.parse(raw);
+          if (Array.isArray(items) && items.length > 0) {
+            const count = items.reduce(
+              (acc: number, item: { quantity?: number }) => acc + (Number(item.quantity) || 1),
+              0,
+            );
+            navCartBadge.textContent = String(count);
+            navCartBadge.hidden = false;
+          } else {
+            navCartBadge.hidden = true;
+          }
+        } catch {
+          navCartBadge.hidden = true;
+        }
+      }
+
+      window.addEventListener(CART_EVENT, updateNavCartBadge);
+      window.addEventListener('storage', updateNavCartBadge);
+      updateNavCartBadge();
+
+      // Filtrado en tiempo real del menú
+      function applySearchFilter() {
+        if (!search) return;
+        const query = search.value.trim().toLowerCase();
+
+        if (searchClear) {
+          searchClear.hidden = query.length === 0;
+        }
+        if (highlights) {
+          highlights.hidden = query.length > 0;
+        }
+
+        cards.forEach((card) => {
+          const name = card.dataset.name ?? '';
+          const match = !query || name.includes(query);
+          card.hidden = !match;
         });
+
+        let visibleSectionCount = 0;
+        sections.forEach((section) => {
+          const visible = Array.from(
+            section.querySelectorAll<HTMLElement>('.menu-card'),
+          ).some((card) => !card.hidden);
+          section.hidden = !visible;
+          if (visible) visibleSectionCount++;
+        });
+
+        if (noResults) {
+          noResults.hidden = visibleSectionCount > 0 || !query;
+        }
+      }
+
+      search?.addEventListener('input', applySearchFilter);
+      searchClear?.addEventListener('click', () => {
+        if (!search) return;
+        search.value = '';
+        applySearchFilter();
+        search.focus();
+      });
+
+      // Resaltar categoría activa al hacer click o scroll
+      function setActiveCategoryChip(id: string) {
+        categoryLinks.forEach((link) => {
+          link.classList.toggle(
+            'menu__category-chip--active',
+            link.dataset.catLink === id,
+          );
+        });
+      }
+
+      categoryLinks.forEach((link) => {
+        link.addEventListener('click', () => {
+          const id = link.dataset.catLink;
+          if (id) setActiveCategoryChip(id);
+        });
+      });
+
+      if ('IntersectionObserver' in window && sections.length > 0) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            const visible = entries.find((e) => e.isIntersecting);
+            if (visible?.target.id) {
+              setActiveCategoryChip(visible.target.id);
+            }
+          },
+          { rootMargin: '-180px 0px -60% 0px', threshold: 0.05 },
+        );
+        sections.forEach((section) => observer.observe(section));
       }
 
       // Actualización reactiva del badge de estado según horario de Venezuela
@@ -255,12 +724,12 @@ const title = `${brand.name} | Menú`;
           statusBadge.classList.add('menu-hero__status--open');
           statusBadge.classList.remove('menu-hero__status--closed');
           statusDot?.classList.remove('menu-hero__status-dot--closed');
-          statusText.textContent = 'Abierto para pedidos';
+          statusText.textContent = 'Abierto ahora';
         } else {
           statusBadge.classList.remove('menu-hero__status--open');
           statusBadge.classList.add('menu-hero__status--closed');
           statusDot?.classList.add('menu-hero__status-dot--closed');
-          statusText.textContent = 'Cerrado para pedidos';
+          statusText.textContent = 'Cerrado';
         }
       }
 
@@ -270,6 +739,10 @@ const title = `${brand.name} | Menú`;
 </html>
 
 <style>
+  :global(html) {
+    scroll-behavior: smooth;
+  }
+
   :global(body) {
     margin: 0;
     font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
@@ -282,31 +755,158 @@ const title = `${brand.name} | Menú`;
     --color-border: rgba(148, 133, 237, 0.18);
   }
 
-  /* HERO DEL RESTAURANTE */
+  [hidden] {
+    display: none !important;
+  }
+
+  /* BARRA DE NAVEGACIÓN SUPERIOR */
+  .site-nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(11, 7, 26, 0.88);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(148, 133, 237, 0.18);
+  }
+
+  .site-nav__inner {
+    max-width: 76rem;
+    margin: 0 auto;
+    padding: 0.7rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .site-nav__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    color: #ffffff;
+    min-width: 0;
+  }
+
+  .site-nav__logo-wrap {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    padding: 0.2rem;
+    background: #ffffff;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent, #9485ed) 45%, transparent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .site-nav__logo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 50%;
+  }
+
+  .site-nav__brand-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .site-nav__brand-name {
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .site-nav__brand-sub {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #c4baf8;
+  }
+
+  .site-nav__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-shrink: 0;
+  }
+
+  .site-nav :global(.currency-switch-wrapper) {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    z-index: auto !important;
+    display: inline-flex !important;
+    margin: 0 !important;
+  }
+
+  .site-nav__cart-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 0.95rem;
+    border-radius: 999px;
+    background: #181035;
+    border: 1px solid rgba(148, 133, 237, 0.3);
+    color: #f1f0f8;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .site-nav__cart-btn:hover {
+    background: #251850;
+    border-color: var(--color-accent, #9485ed);
+    color: #ffffff;
+  }
+
+  .site-nav__cart-btn svg {
+    color: var(--color-accent, #9485ed);
+  }
+
+  .site-nav__cart-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    padding: 0 0.35rem;
+    border-radius: 999px;
+    background: var(--color-accent, #9485ed);
+    color: #0b071a;
+    font-size: 0.72rem;
+    font-weight: 800;
+  }
+
+  /* HERO CULINARIO */
   .menu-hero {
     position: relative;
-    background: linear-gradient(
-      180deg,
-      #090317 0%,
-      #14082d 55%,
-      #0b071a 100%
-    );
+    background: linear-gradient(180deg, #090317 0%, #14082d 60%, #0b071a 100%);
     color: var(--color-primary-foreground, #dadada);
-    padding: 2.5rem 1.5rem 2.75rem;
+    padding: 2.75rem 1.5rem 3rem;
     overflow: hidden;
   }
 
   .menu-hero__ambient {
     position: absolute;
-    top: -30%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 650px;
-    height: 650px;
+    top: -35%;
+    right: 5%;
+    width: 680px;
+    height: 680px;
     border-radius: 50%;
     background: radial-gradient(
       circle,
-      color-mix(in srgb, var(--color-accent, #9485ed) 24%, transparent) 0%,
+      color-mix(in srgb, var(--color-accent, #9485ed) 22%, transparent) 0%,
       transparent 70%
     );
     pointer-events: none;
@@ -316,33 +916,166 @@ const title = `${brand.name} | Menú`;
     position: relative;
     max-width: 76rem;
     margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1.75rem;
     z-index: 1;
   }
 
-  .menu-hero__topbar {
+  .menu-hero__grid {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 2.5rem;
+    align-items: center;
+  }
+
+  .menu-hero__content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.15rem;
+    min-width: 0;
+  }
+
+  .menu-hero__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    background: rgba(148, 133, 237, 0.14);
+    border: 1px solid rgba(148, 133, 237, 0.28);
+    color: #c4baf8;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  .menu-hero__name {
+    margin: 0;
+    font-size: clamp(2rem, 4.2vw, 3.15rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: #ffffff;
+  }
+
+  .menu-hero__tagline {
+    margin: 0;
+    font-size: 1.05rem;
+    color: #c7c1e5;
+    line-height: 1.55;
+    max-width: 36rem;
+  }
+
+  .menu-hero__meta-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem 1.35rem;
+    padding: 0.9rem 1.1rem;
+    background: rgba(24, 16, 53, 0.75);
+    border: 1px solid rgba(148, 133, 237, 0.2);
+    border-radius: 1rem;
+    width: 100%;
+    max-width: 38rem;
+  }
+
+  .menu-hero__meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .menu-hero__meta-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 1.25rem;
-    flex-wrap: wrap;
-    font-size: 0.8125rem;
-    width: 100%;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.6rem;
+    background: rgba(148, 133, 237, 0.16);
+    color: var(--color-accent, #9485ed);
+    flex-shrink: 0;
   }
 
-  .menu-hero__status {
+  .menu-hero__meta-item > div {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .menu-hero__meta-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #aca6cb;
+  }
+
+  .menu-hero__meta-val {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  .menu-hero__cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.25rem;
+  }
+
+  .menu-hero__cta-primary {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.35rem 0.95rem;
+    padding: 0.85rem 1.5rem;
+    border-radius: 999px;
+    background: var(--color-accent, #9485ed);
+    color: #0b071a;
+    text-decoration: none;
+    font-size: 0.925rem;
+    font-weight: 800;
+    box-shadow: 0 8px 24px rgba(148, 133, 237, 0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .menu-hero__cta-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(148, 133, 237, 0.5);
+  }
+
+  .menu-hero__cta-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.85rem 1.35rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(148, 133, 237, 0.3);
+    color: #f1f0f8;
+    font-size: 0.925rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .menu-hero__cta-secondary:hover {
+    background: rgba(148, 133, 237, 0.16);
+    border-color: var(--color-accent, #9485ed);
+    color: #ffffff;
+  }
+
+  /* ESTADO ABIERTO / CERRADO */
+  .menu-hero__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.85rem;
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 999px;
-    font-weight: 600;
-    transition: all 0.25s ease;
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
   }
 
   .menu-hero__status--open {
@@ -372,12 +1105,6 @@ const title = `${brand.name} | Menú`;
     animation: none;
   }
 
-  .menu-hero__status-hours {
-    font-size: 0.75rem;
-    font-weight: 500;
-    opacity: 0.85;
-  }
-
   @keyframes statusPulse {
     0%, 100% {
       opacity: 1;
@@ -389,104 +1116,243 @@ const title = `${brand.name} | Menú`;
     }
   }
 
-  .menu-hero__location {
+  /* TARJETA PLATO DESTACADO EN HERO */
+  .menu-hero__showcase {
+    min-width: 0;
+  }
+
+  .hero-dish {
+    display: flex;
+    flex-direction: column;
+    background: #181035;
+    border: 1px solid rgba(148, 133, 237, 0.28);
+    border-radius: 1.5rem;
+    overflow: hidden;
+    text-decoration: none;
+    color: #ffffff;
+    box-shadow:
+      0 22px 48px -10px rgba(0, 0, 0, 0.65),
+      0 0 32px rgba(148, 133, 237, 0.14);
+    transition: transform 0.28s ease, border-color 0.28s ease;
+  }
+
+  .hero-dish:hover {
+    transform: translateY(-4px);
+    border-color: var(--color-accent, #9485ed);
+  }
+
+  .hero-dish__media {
+    position: relative;
+    height: 220px;
+    background: #0f0826;
+    overflow: hidden;
+  }
+
+  .hero-dish__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+  }
+
+  .hero-dish:hover .hero-dish__img {
+    transform: scale(1.05);
+  }
+
+  .hero-dish__placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at center, #24164a 0%, #12092e 100%);
+  }
+
+  .hero-dish__placeholder-letter {
+    font-size: 4.5rem;
+    font-weight: 800;
+    color: rgba(148, 133, 237, 0.4);
+  }
+
+  .hero-dish__overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(11, 7, 26, 0.15) 0%, rgba(24, 16, 53, 0.85) 100%);
+  }
+
+  .hero-dish__tag {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    background: rgba(11, 7, 26, 0.85);
+    border: 1px solid rgba(148, 133, 237, 0.38);
+    color: #c4baf8;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .hero-dish__body {
+    padding: 1.25rem 1.35rem 1.35rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .hero-dish__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .hero-dish__category {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #aca6cb;
+  }
+
+  .hero-dish__price {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--color-accent, #9485ed);
+  }
+
+  .hero-dish__title {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.25;
+  }
+
+  .hero-dish__desc {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #aca6cb;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .hero-dish__action {
+    margin-top: 0.5rem;
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    color: #c7c1e5;
-    font-weight: 500;
-  }
-
-  /* LOGO Y NOMBRE DEL NEGOCIO CENTRADO */
-  .menu-hero__brand {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    gap: 1.15rem;
-  }
-
-  .menu-hero__logo-wrap {
-    flex-shrink: 0;
-    width: 90px;
-    height: 90px;
-    border-radius: 50%;
-    padding: 0.4rem;
-    background: #ffffff;
-    box-shadow:
-      0 12px 30px -4px rgba(0, 0, 0, 0.6),
-      0 0 0 3px color-mix(in srgb, var(--color-accent, #9485ed) 55%, transparent);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .menu-hero__logo {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    border-radius: 50%;
-  }
-
-  .menu-hero__copy {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    max-width: 38rem;
-  }
-
-  .menu-hero__name {
-    margin: 0;
-    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-size: 0.85rem;
     font-weight: 800;
-    letter-spacing: -0.025em;
-    line-height: 1.15;
-    color: #ffffff;
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+    color: #c4baf8;
   }
 
-  .menu-hero__tagline {
-    margin: 0.45rem 0 0;
-    font-size: 1rem;
-    color: #c7c1e5;
-    line-height: 1.45;
-  }
-
-  /* MAIN WRAPPER */
-  .menu {
-    max-width: 76rem;
-    margin: 0 auto;
-    padding: 0 1.5rem 6rem;
-  }
-
-  /* BARRA DE CONTROLES: BUSCADOR Y CATEGORÍAS */
+  /* ACORDEÓN STICKY DE BÚSQUEDA Y CATEGORÍAS */
   .menu__controls {
-    position: relative;
+    position: sticky;
+    top: 65px;
     z-index: 40;
-    margin-top: -1.25rem;
-    margin-bottom: 2.75rem;
-    padding: 0.85rem 0;
-    background: transparent;
+    background: rgba(11, 7, 26, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(148, 133, 237, 0.12);
+    border-bottom: 1px solid rgba(148, 133, 237, 0.16);
+    padding: 0.7rem 1.5rem;
   }
 
   .menu__controls-inner {
+    max-width: 76rem;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .menu__accordion-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.45rem 0.75rem;
+    background: rgba(24, 16, 53, 0.75);
+    border: 1px solid rgba(148, 133, 237, 0.22);
+    border-radius: 0.85rem;
+    color: #f1f0f8;
+    font-size: 0.875rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+  }
+
+  .menu__accordion-toggle:hover {
+    border-color: var(--color-accent, #9485ed);
+    background: rgba(37, 24, 80, 0.85);
+  }
+
+  .menu__accordion-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .menu__accordion-title svg {
+    color: var(--color-accent, #9485ed);
+  }
+
+  .menu__accordion-right {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #c4baf8;
+    font-size: 0.78rem;
+  }
+
+  .menu__accordion-chevron {
+    transition: transform 0.25s ease;
+  }
+
+  .menu__accordion-toggle[aria-expanded='true'] .menu__accordion-chevron {
+    transform: rotate(180deg);
+  }
+
+  .menu__controls-panel {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows 0.28s ease;
+  }
+
+  .menu__controls-panel--collapsed {
+    grid-template-rows: 0fr;
+  }
+
+  .menu__controls-panel-inner {
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     gap: 0.85rem;
+    padding-top: 0.85rem;
+    transition: padding-top 0.28s ease;
+  }
+
+  .menu__controls-panel--collapsed .menu__controls-panel-inner {
+    padding-top: 0;
   }
 
   .menu__search-box {
     position: relative;
-    max-width: 42rem;
+    max-width: 44rem;
     width: 100%;
     margin: 0 auto;
   }
 
   .menu__search-icon {
     position: absolute;
-    left: 1.25rem;
+    left: 1.15rem;
     top: 50%;
     transform: translateY(-50%);
     color: #9d96bd;
@@ -497,17 +1363,14 @@ const title = `${brand.name} | Menú`;
 
   .menu__search-box input {
     width: 100%;
-    padding: 1rem 1.25rem 1rem 3.1rem;
-    font-size: 0.975rem;
+    padding: 0.85rem 2.75rem 0.85rem 2.95rem;
+    font-size: 0.925rem;
     border: 1px solid rgba(148, 133, 237, 0.25);
     border-radius: 999px;
-    background: transparent;
+    background: #14082d;
     color: #ffffff;
-    box-shadow:
-      0 10px 25px -4px rgba(0, 0, 0, 0.35),
-      0 2px 6px -1px rgba(0, 0, 0, 0.2);
     outline: none;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
 
   .menu__search-box input::placeholder {
@@ -516,20 +1379,35 @@ const title = `${brand.name} | Menú`;
 
   .menu__search-box input:focus {
     border-color: var(--color-accent, #9485ed);
-    background: rgba(148, 133, 237, 0.08);
-    box-shadow:
-      0 0 0 4px rgba(148, 133, 237, 0.25),
-      0 12px 28px -4px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 0 0 3px rgba(148, 133, 237, 0.22);
   }
 
-  /* CATEGORÍAS */
+  .menu__search-clear {
+    position: absolute;
+    right: 0.9rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    border: none;
+    background: rgba(148, 133, 237, 0.2);
+    color: #ffffff;
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   .menu__categories {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
     overflow-x: auto;
-    padding: 0.25rem 0.5rem 0.5rem;
+    padding: 0.15rem 0.25rem;
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
@@ -541,40 +1419,141 @@ const title = `${brand.name} | Menú`;
   .menu__category-chip {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.55rem 1.15rem;
-    border: 1px solid rgba(148, 133, 237, 0.25);
+    gap: 0.45rem;
+    padding: 0.5rem 1.05rem;
+    border: 1px solid rgba(148, 133, 237, 0.22);
     border-radius: 999px;
-    background: transparent;
+    background: #181035;
     color: #f1f0f8;
     text-decoration: none;
-    font-size: 0.875rem;
+    font-size: 0.84rem;
     font-weight: 700;
     white-space: nowrap;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    transition:
-      background-color 0.2s ease,
-      color 0.2s ease,
-      border-color 0.2s ease,
-      transform 0.15s ease,
-      box-shadow 0.2s ease;
+    transition: all 0.2s ease;
   }
 
-  .menu__category-chip:hover {
+  .menu__category-chip:hover,
+  .menu__category-chip--active {
     border-color: var(--color-accent, #9485ed);
-    background: rgba(148, 133, 237, 0.15);
+    background: rgba(148, 133, 237, 0.2);
     color: #ffffff;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(148, 133, 237, 0.3);
   }
 
   .menu__category-count {
-    font-size: 0.75rem;
-    padding: 0.1rem 0.5rem;
+    font-size: 0.72rem;
+    padding: 0.1rem 0.45rem;
     border-radius: 999px;
-    background: rgba(148, 133, 237, 0.18);
+    background: rgba(148, 133, 237, 0.2);
     color: #c4baf8;
     font-weight: 700;
+  }
+
+  /* MAIN WRAPPER */
+  .menu {
+    max-width: 76rem;
+    margin: 0 auto;
+    padding: 2.25rem 1.5rem 5rem;
+  }
+
+  /* SUGERENCIAS RÁPIDAS */
+  .menu-highlights {
+    margin-bottom: 3rem;
+  }
+
+  .menu-highlights__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.15rem;
+  }
+
+  .menu-highlights__title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #ffffff;
+  }
+
+  .menu-highlights__sub {
+    font-size: 0.85rem;
+    color: #aca6cb;
+  }
+
+  .menu-highlights__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+  }
+
+  .highlight-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.75rem;
+    border-radius: 1rem;
+    background: #181035;
+    border: 1px solid rgba(148, 133, 237, 0.2);
+    text-decoration: none;
+    color: #ffffff;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .highlight-pill:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-accent, #9485ed);
+  }
+
+  .highlight-pill__media {
+    width: 64px;
+    height: 64px;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    background: #0f0826;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #c4baf8;
+  }
+
+  .highlight-pill__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .highlight-pill__info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+  }
+
+  .highlight-pill__cat {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #aca6cb;
+  }
+
+  .highlight-pill__name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .highlight-pill__price {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: var(--color-accent, #9485ed);
   }
 
   /* SECCIÓN VACÍA O SIN RESULTADOS */
@@ -634,18 +1613,18 @@ const title = `${brand.name} | Menú`;
   .menu__sections {
     display: flex;
     flex-direction: column;
-    gap: 4.25rem;
+    gap: 4rem;
   }
 
   .menu-section {
-    scroll-margin-top: 6.5rem;
+    scroll-margin-top: 12.5rem;
   }
 
   .menu-section__header {
     display: flex;
     align-items: center;
     gap: 1.25rem;
-    margin-bottom: 1.75rem;
+    margin-bottom: 1.5rem;
   }
 
   .menu-section__title-group {
@@ -686,28 +1665,139 @@ const title = `${brand.name} | Menú`;
 
   .menu-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
   }
 
+  @media (max-width: 520px) {
+    .menu-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+  }
 
+  /* FOOTER */
+  .site-footer {
+    background: #090317;
+    border-top: 1px solid rgba(148, 133, 237, 0.18);
+    padding: 3rem 1.5rem 5.5rem;
+  }
+
+  .site-footer__inner {
+    max-width: 76rem;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .site-footer__brand {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+  }
+
+  .site-footer__logo {
+    border-radius: 50%;
+    background: #ffffff;
+    padding: 0.2rem;
+    object-fit: contain;
+  }
+
+  .site-footer__name {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #ffffff;
+  }
+
+  .site-footer__tagline {
+    margin: 0.2rem 0 0;
+    font-size: 0.875rem;
+    color: #aca6cb;
+  }
+
+  .site-footer__cols {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    border-top: 1px solid rgba(148, 133, 237, 0.14);
+    padding-top: 1.5rem;
+  }
+
+  .site-footer__col h4 {
+    margin: 0 0 0.6rem;
+    font-size: 0.82rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #c4baf8;
+  }
+
+  .site-footer__col p {
+    margin: 0 0 0.35rem;
+    font-size: 0.875rem;
+    color: #aca6cb;
+    line-height: 1.5;
+  }
+
+  .site-footer__links {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
+
+  .site-footer__links a,
+  .site-footer__link-btn {
+    color: #f1f0f8;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .site-footer__links a:hover,
+  .site-footer__link-btn:hover {
+    color: var(--color-accent, #9485ed);
+    text-decoration: underline;
+  }
+
+  @media (max-width: 900px) {
+    .menu-hero__grid {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+  }
 
   @media (max-width: 640px) {
+    .site-nav__inner {
+      padding: 0.65rem 1rem;
+    }
+
+    .site-nav__brand-sub,
+    .site-nav__cart-label {
+      display: none;
+    }
+
     .menu-hero {
       padding: 2rem 1rem 2.25rem;
     }
 
-    .menu-hero__logo-wrap {
-      width: 76px;
-      height: 76px;
-    }
-
-    .menu {
-      padding: 0 1rem 5rem;
+    .menu__controls {
+      top: 57px;
+      padding: 0.75rem 1rem;
     }
 
     .menu__categories {
       justify-content: flex-start;
+    }
+
+    .menu {
+      padding: 1.75rem 1rem 4.5rem;
     }
   }
 </style>

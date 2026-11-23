@@ -3,6 +3,7 @@ import { brand, brandCssVariablesStyle } from "@/data/brand";
 import { getMenuCategoryLabel } from "@/data/product-categories";
 import {
   getActiveMenuProductById,
+  getActiveMenuProductBySlugOrId,
   listActiveMenuProducts,
 } from "@/lib/db/products";
 import {
@@ -27,7 +28,7 @@ if (!id) {
   return Astro.redirect("/");
 }
 
-const product = await getActiveMenuProductById(id);
+const product = await getActiveMenuProductBySlugOrId(id);
 
 if (!product) {
   return Astro.redirect("/");
@@ -136,16 +137,15 @@ const maxStock = hasInventory ? product.stock! : undefined;
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"
-                ></path>
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
                 <line x1="3" y1="6" x2="21" y2="6"></line>
                 <path d="M16 10a4 4 0 0 1-8 0"></path>
               </svg>
             </span>
             <span class="prod-nav__cart-label">Mi pedido</span>
-            <span class="prod-nav__cart-badge" id="nav-cart-badge" hidden
-              >0</span
-            >
+            <span class="prod-nav__cart-badge" id="nav-cart-badge" hidden>
+              0
+            </span>
           </a>
         </div>
       </header>
@@ -156,42 +156,40 @@ const maxStock = hasInventory ? product.stock! : undefined;
         <section class="prod-media-col">
           <div class="prod-media-card">
             <div class="prod-media-container">
-              {
-                productImageUrl ? (
-                  <img
-                    src={productImageUrl}
-                    alt={product.name}
-                    class="prod-media-img"
-                    loading="eager"
-                  />
-                ) : (
-                  <div class="prod-placeholder" aria-hidden="true">
-                    <div class="prod-placeholder__bg" />
-                    <div class="prod-placeholder__content">
-                      <span class="prod-placeholder__letter">
-                        {product.name.trim().charAt(0).toUpperCase()}
-                      </span>
-                      <svg
-                        class="prod-placeholder__cutlery"
-                        viewBox="0 0 24 24"
-                        width="36"
-                        height="36"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.6"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
-                        <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
-                        <line x1="6" y1="1" x2="6" y2="4" />
-                        <line x1="10" y1="1" x2="10" y2="4" />
-                        <line x1="14" y1="1" x2="14" y2="4" />
-                      </svg>
-                    </div>
+              {productImageUrl ? (
+                <img
+                  src={productImageUrl}
+                  alt={product.name}
+                  class="prod-media-img"
+                  loading="eager"
+                />
+              ) : (
+                <div class="prod-placeholder" aria-hidden="true">
+                  <div class="prod-placeholder__bg" />
+                  <div class="prod-placeholder__content">
+                    <span class="prod-placeholder__letter">
+                      {product.name.trim().charAt(0).toUpperCase()}
+                    </span>
+                    <svg
+                      class="prod-placeholder__cutlery"
+                      viewBox="0 0 24 24"
+                      width="36"
+                      height="36"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
+                      <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
+                      <line x1="6" y1="1" x2="6" y2="4" />
+                      <line x1="10" y1="1" x2="10" y2="4" />
+                      <line x1="14" y1="1" x2="14" y2="4" />
+                    </svg>
                   </div>
-                )
-              }
+                </div>
+              )}
               <div class="prod-media-gradient"></div>
               <span class="prod-media-badge">{categoryLabel}</span>
             </div>
@@ -205,16 +203,14 @@ const maxStock = hasInventory ? product.stock! : undefined;
             <div class="prod-header">
               <div class="prod-category-tag">{categoryLabel}</div>
               <h1 class="prod-title">{product.name}</h1>
-              {
-                product.description && (
-                  <p class="prod-description">{product.description}</p>
-                )
-              }
+              {product.description && (
+                <p class="prod-description">{product.description}</p>
+              )}
               <div class="prod-price-hero">
                 <span class="prod-price-label">Precio base</span>
-                <span class="prod-price-val" data-price-cop={product.price}
-                  >{formatCop(product.price)}</span
-                >
+                <span class="prod-price-val" data-price-cop={product.price}>
+                  {formatCop(product.price)}
+                </span>
               </div>
             </div>
 
@@ -229,22 +225,20 @@ const maxStock = hasInventory ? product.stock! : undefined;
               <div class="prod-section prod-section--quantity">
                 <div class="prod-section__heading">
                   <span class="prod-section__title">Cantidad</span>
-                  {
-                    isOutOfStock ? (
-                      <span class="prod-section__stock-tag prod-section__stock-tag--empty">
-                        Agotado en inventario
-                      </span>
-                    ) : hasInventory && maxStock !== undefined ? (
-                      <span class="prod-section__stock-tag">
-                        Disponibles: <strong>{maxStock}</strong>{" "}
-                        {maxStock === 1 ? "unidad" : "unidades"}
-                      </span>
-                    ) : (
-                      <span class="prod-section__hint">
-                        ¿Cuántas unidades deseas?
-                      </span>
-                    )
-                  }
+                  {isOutOfStock ? (
+                    <span class="prod-section__stock-tag prod-section__stock-tag--empty">
+                      Agotado en inventario
+                    </span>
+                  ) : hasInventory && maxStock !== undefined ? (
+                    <span class="prod-section__stock-tag">
+                      Disponibles: <strong>{maxStock}</strong>{" "}
+                      {maxStock === 1 ? "unidad" : "unidades"}
+                    </span>
+                  ) : (
+                    <span class="prod-section__hint">
+                      ¿Cuántas unidades deseas?
+                    </span>
+                  )}
                 </div>
 
                 <div class="prod-stepper">
@@ -288,8 +282,10 @@ const maxStock = hasInventory ? product.stock! : undefined;
                     class="prod-stepper__btn"
                     id="qty-increase"
                     aria-label="Aumentar cantidad"
-                    disabled={isOutOfStock ||
-                      (hasInventory && maxStock !== undefined && maxStock <= 1)}
+                    disabled={
+                      isOutOfStock ||
+                      (hasInventory && maxStock !== undefined && maxStock <= 1)
+                    }
                   >
                     <svg
                       viewBox="0 0 24 24"
@@ -309,169 +305,165 @@ const maxStock = hasInventory ? product.stock! : undefined;
               </div>
 
               <!-- PREFERENCIAS / MODIFIERS -->
-              {
-                modifierGroups.length > 0 && (
-                  <div class="prod-section">
-                    <div class="prod-section__heading">
-                      <span class="prod-section__title">
-                        Personaliza tu preparación
-                      </span>
-                      <span class="prod-section__hint">
-                        Indícanos tus preferencias
-                      </span>
-                    </div>
-
-                    <div class="prod-modifiers-wrap">
-                      {modifierGroups.map((group) => (
-                        <div class="prod-mod-group">
-                          <div class="prod-mod-group__header">
-                            <span class="prod-mod-group__label">
-                              {group.label}
-                            </span>
-                            <span class="prod-mod-group__badge">
-                              {group.mode === "single"
-                                ? "Elige 1 opción"
-                                : "Opcional"}
-                            </span>
-                          </div>
-
-                          <div
-                            class="prod-mod-chips"
-                            role={
-                              group.mode === "single" ? "radiogroup" : "group"
-                            }
-                            aria-label={group.label}
-                          >
-                            {group.options.map((option) => {
-                              const isChecked =
-                                group.mode === "single"
-                                  ? defaultSelections[group.id]?.[0] === option
-                                  : (defaultSelections[group.id]?.includes(
-                                      option,
-                                    ) ?? false);
-
-                              return (
-                                <label class="prod-mod-chip">
-                                  <input
-                                    type={
-                                      group.mode === "single"
-                                        ? "radio"
-                                        : "checkbox"
-                                    }
-                                    name={group.id}
-                                    value={option}
-                                    checked={isChecked}
-                                    class="prod-mod-chip__input"
-                                  />
-                                  <span class="prod-mod-chip__box">
-                                    <span
-                                      class="prod-mod-chip__check"
-                                      aria-hidden="true"
-                                    >
-                                      <svg
-                                        viewBox="0 0 20 20"
-                                        width="12"
-                                        height="12"
-                                        fill="currentColor"
-                                      >
-                                        <path
-                                          fill-rule="evenodd"
-                                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                          clip-rule="evenodd"
-                                        />
-                                      </svg>
-                                    </span>
-                                    <span class="prod-mod-chip__text">
-                                      {option}
-                                    </span>
-                                  </span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+              {modifierGroups.length > 0 && (
+                <div class="prod-section">
+                  <div class="prod-section__heading">
+                    <span class="prod-section__title">
+                      Personaliza tu preparación
+                    </span>
+                    <span class="prod-section__hint">
+                      Indícanos tus preferencias
+                    </span>
                   </div>
-                )
-              }
+
+                  <div class="prod-modifiers-wrap">
+                    {modifierGroups.map((group) => (
+                      <div class="prod-mod-group">
+                        <div class="prod-mod-group__header">
+                          <span class="prod-mod-group__label">
+                            {group.label}
+                          </span>
+                          <span class="prod-mod-group__badge">
+                            {group.mode === "single"
+                              ? "Elige 1 opción"
+                              : "Opcional"}
+                          </span>
+                        </div>
+
+                        <div
+                          class="prod-mod-chips"
+                          role={
+                            group.mode === "single" ? "radiogroup" : "group"
+                          }
+                          aria-label={group.label}
+                        >
+                          {group.options.map((option) => {
+                            const isChecked =
+                              group.mode === "single"
+                                ? defaultSelections[group.id]?.[0] === option
+                                : (defaultSelections[group.id]?.includes(
+                                    option,
+                                  ) ?? false);
+
+                            return (
+                              <label class="prod-mod-chip">
+                                <input
+                                  type={
+                                    group.mode === "single"
+                                      ? "radio"
+                                      : "checkbox"
+                                  }
+                                  name={group.id}
+                                  value={option}
+                                  checked={isChecked}
+                                  class="prod-mod-chip__input"
+                                />
+                                <span class="prod-mod-chip__box">
+                                  <span
+                                    class="prod-mod-chip__check"
+                                    aria-hidden="true"
+                                  >
+                                    <svg
+                                      viewBox="0 0 20 20"
+                                      width="12"
+                                      height="12"
+                                      fill="currentColor"
+                                    >
+                                      <path
+                                        fill-rule="evenodd"
+                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                        clip-rule="evenodd"
+                                      />
+                                    </svg>
+                                  </span>
+                                  <span class="prod-mod-chip__text">
+                                    {option}
+                                  </span>
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <!-- ADICIONALES (EXTRAS) -->
-              {
-                usesAdicionales && adicionalProducts.length > 0 && (
-                  <div class="prod-section">
-                    <div class="prod-section__heading">
-                      <span class="prod-section__title">
-                        Adicionales sugeridos
-                      </span>
-                      <span class="prod-section__hint">
-                        Personaliza y añade más sabor
-                      </span>
-                    </div>
+              {usesAdicionales && adicionalProducts.length > 0 && (
+                <div class="prod-section">
+                  <div class="prod-section__heading">
+                    <span class="prod-section__title">
+                      Adicionales sugeridos
+                    </span>
+                    <span class="prod-section__hint">
+                      Personaliza y añade más sabor
+                    </span>
+                  </div>
 
-                    <div
-                      class="prod-extras-grid"
-                      role="group"
-                      aria-label="Adicionales disponibles"
-                    >
-                      {adicionalProducts.map((extra) => (
-                        <label class="prod-extra-item">
-                          <input
-                            type="checkbox"
-                            name="adicional"
-                            value={extra.id}
-                            data-price={extra.price}
-                            data-name={extra.name}
-                            class="prod-extra-item__input"
-                          />
-                          <div class="prod-extra-item__box">
-                            <div
-                              class="prod-extra-item__check-wrap"
-                              aria-hidden="true"
-                            >
-                              <span class="prod-extra-item__checkbox">
-                                <svg
-                                  viewBox="0 0 20 20"
-                                  width="12"
-                                  height="12"
-                                  fill="currentColor"
-                                >
-                                  <path
-                                    fill-rule="evenodd"
-                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                    clip-rule="evenodd"
-                                  />
-                                </svg>
-                              </span>
-                            </div>
-                            <div class="prod-extra-item__info">
-                              <span class="prod-extra-item__name">
-                                {extra.name}
-                              </span>
-                            </div>
-                            <span
-                              class="prod-extra-item__price"
-                              data-price-cop={extra.price}
-                              data-price-prefix="+"
-                            >
-                              + {formatCop(extra.price)}
+                  <div
+                    class="prod-extras-grid"
+                    role="group"
+                    aria-label="Adicionales disponibles"
+                  >
+                    {adicionalProducts.map((extra) => (
+                      <label class="prod-extra-item">
+                        <input
+                          type="checkbox"
+                          name="adicional"
+                          value={extra.id}
+                          data-price={extra.price}
+                          data-name={extra.name}
+                          class="prod-extra-item__input"
+                        />
+                        <div class="prod-extra-item__box">
+                          <div
+                            class="prod-extra-item__check-wrap"
+                            aria-hidden="true"
+                          >
+                            <span class="prod-extra-item__checkbox">
+                              <svg
+                                viewBox="0 0 20 20"
+                                width="12"
+                                height="12"
+                                fill="currentColor"
+                              >
+                                <path
+                                  fill-rule="evenodd"
+                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                  clip-rule="evenodd"
+                                />
+                              </svg>
                             </span>
                           </div>
-                        </label>
-                      ))}
-                    </div>
+                          <div class="prod-extra-item__info">
+                            <span class="prod-extra-item__name">
+                              {extra.name}
+                            </span>
+                          </div>
+                          <span
+                            class="prod-extra-item__price"
+                            data-price-cop={extra.price}
+                            data-price-prefix="+"
+                          >
+                            + {formatCop(extra.price)}
+                          </span>
+                        </div>
+                      </label>
+                    ))}
                   </div>
-                )
-              }
+                </div>
+              )}
 
               <!-- SUMMARY & ORDER ACTION -->
               <div class="prod-checkout-card">
                 <div class="prod-checkout-summary">
                   <div class="prod-checkout-row">
                     <span class="prod-checkout-label">Total estimado</span>
-                    <span class="prod-checkout-total" id="product-total"
-                      >{formatCop(product.price)}</span
-                    >
+                    <span class="prod-checkout-total" id="product-total">
+                      {formatCop(product.price)}
+                    </span>
                   </div>
                   <span
                     class="prod-checkout-subtext"
@@ -487,93 +479,84 @@ const maxStock = hasInventory ? product.stock! : undefined;
                     class={`prod-submit-btn ${!storeIsOpen ? "prod-submit-btn--closed" : ""} ${isOutOfStock ? "prod-submit-btn--disabled" : ""}`}
                     id="product-submit-btn"
                     disabled={!storeIsOpen || isOutOfStock}
-                    title={isOutOfStock
-                      ? "Producto agotado en inventario"
-                      : !storeIsOpen
-                        ? `Pedidos dentro del horario laboral (${brand.contact.openingHour || ""} - ${brand.contact.closingHour || ""})`
-                        : undefined}
-                  >
-                    {
-                      isOutOfStock ? (
-                        <>
-                          <span
-                            class="prod-submit-btn__icon"
-                            aria-hidden="true"
-                          >
-                            <svg
-                              viewBox="0 0 24 24"
-                              width="20"
-                              height="20"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="2"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                            >
-                              <circle cx="12" cy="12" r="10" />
-                              <line x1="15" y1="9" x2="9" y2="15" />
-                              <line x1="9" y1="9" x2="15" y2="15" />
-                            </svg>
-                          </span>
-                          <span class="prod-submit-btn__label">
-                            Producto Agotado
-                          </span>
-                        </>
-                      ) : storeIsOpen ? (
-                        <>
-                          <span
-                            class="prod-submit-btn__icon"
-                            aria-hidden="true"
-                          >
-                            <svg
-                              viewBox="0 0 24 24"
-                              width="20"
-                              height="20"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="2.2"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                            >
-                              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-                              <line x1="3" y1="6" x2="21" y2="6" />
-                              <path d="M16 10a4 4 0 0 1-8 0" />
-                            </svg>
-                          </span>
-                          <span class="prod-submit-btn__label">
-                            Agregar al pedido
-                          </span>
-                          <span class="prod-submit-btn__dot">•</span>
-                          <span class="prod-submit-btn__price" id="btn-total">
-                            {formatCop(product.price)}
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <span
-                            class="prod-submit-btn__icon"
-                            aria-hidden="true"
-                          >
-                            <svg
-                              viewBox="0 0 24 24"
-                              width="20"
-                              height="20"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="2"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                            >
-                              <circle cx="12" cy="12" r="10" />
-                              <polyline points="12 6 12 12 16 14" />
-                            </svg>
-                          </span>
-                          <span class="prod-submit-btn__label">
-                            Pedidos dentro del horario laboral
-                          </span>
-                        </>
-                      )
+                    title={
+                      isOutOfStock
+                        ? "Producto agotado en inventario"
+                        : !storeIsOpen
+                          ? `Pedidos dentro del horario laboral (${brand.contact.openingHour || ""} - ${brand.contact.closingHour || ""})`
+                          : undefined
                     }
+                  >
+                    {isOutOfStock ? (
+                      <>
+                        <span class="prod-submit-btn__icon" aria-hidden="true">
+                          <svg
+                            viewBox="0 0 24 24"
+                            width="20"
+                            height="20"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="15" y1="9" x2="9" y2="15" />
+                            <line x1="9" y1="9" x2="15" y2="15" />
+                          </svg>
+                        </span>
+                        <span class="prod-submit-btn__label">
+                          Producto Agotado
+                        </span>
+                      </>
+                    ) : storeIsOpen ? (
+                      <>
+                        <span class="prod-submit-btn__icon" aria-hidden="true">
+                          <svg
+                            viewBox="0 0 24 24"
+                            width="20"
+                            height="20"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                            <line x1="3" y1="6" x2="21" y2="6" />
+                            <path d="M16 10a4 4 0 0 1-8 0" />
+                          </svg>
+                        </span>
+                        <span class="prod-submit-btn__label">
+                          Agregar al pedido
+                        </span>
+                        <span class="prod-submit-btn__dot">•</span>
+                        <span class="prod-submit-btn__price" id="btn-total">
+                          {formatCop(product.price)}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span class="prod-submit-btn__icon" aria-hidden="true">
+                          <svg
+                            viewBox="0 0 24 24"
+                            width="20"
+                            height="20"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                          </svg>
+                        </span>
+                        <span class="prod-submit-btn__label">
+                          Pedidos dentro del horario laboral
+                        </span>
+                      </>
+                    )}
                   </button>
 
                   <div
@@ -584,9 +567,9 @@ const maxStock = hasInventory ? product.stock! : undefined;
                   >
                     <span class="prod-feedback-toast__icon">✓</span>
                     <span>¡Agregado con éxito a tu pedido!</span>
-                    <a href="/pedido" class="prod-feedback-toast__link"
-                      >Ver pedido →</a
-                    >
+                    <a href="/pedido" class="prod-feedback-toast__link">
+                      Ver pedido →
+                    </a>
                   </div>
                 </div>
               </div>
@@ -624,7 +607,6 @@ const maxStock = hasInventory ? product.stock! : undefined;
         stock: maxStock ?? null,
       })}
     />
-
     <!-- CLIENT LOGIC SCRIPT -->
     <script>
       import {
@@ -1196,17 +1178,19 @@ const maxStock = hasInventory ? product.stock! : undefined;
     .prod-layout {
       flex: 1;
       min-height: 0;
-      grid-template-columns: 460px minmax(0, 1fr);
+      grid-template-columns: clamp(320px, 38vw, 460px) minmax(0, 1fr);
       grid-template-rows: minmax(0, 1fr);
       gap: 2.25rem;
       align-items: stretch;
       max-height: none;
+      padding: 0.5rem 0 0;
     }
   }
 
   /* MEDIA SECTION (LEFT) */
   .prod-media-col {
     position: relative;
+    min-width: 0;
     max-width: 100%;
     width: 100%;
   }
@@ -1291,6 +1275,10 @@ const maxStock = hasInventory ? product.stock! : undefined;
     position: absolute;
     top: 1rem;
     left: 1rem;
+    max-width: calc(100% - 2rem);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     padding: 0.4rem 0.85rem;
     border-radius: 9999px;
     background: rgba(11, 7, 26, 0.85);
@@ -1337,6 +1325,8 @@ const maxStock = hasInventory ? product.stock! : undefined;
   /* DETAILS COLUMN (RIGHT) */
   .prod-details-col {
     position: relative;
+    min-width: 0;
+    max-width: 100%;
   }
 
   @media (min-width: 880px) {
@@ -1353,6 +1343,9 @@ const maxStock = hasInventory ? product.stock! : undefined;
     border: 1px solid rgba(148, 133, 237, 0.22);
     border-radius: 1.5rem;
     padding: 1.75rem;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden;
     box-shadow:
       0 16px 40px -8px rgba(0, 0, 0, 0.6),
       0 0 25px rgba(148, 133, 237, 0.08);
@@ -1407,10 +1400,15 @@ const maxStock = hasInventory ? product.stock! : undefined;
     margin-bottom: 1.75rem;
     border-bottom: 1px solid rgba(148, 133, 237, 0.16);
     padding-bottom: 1.75rem;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .prod-category-tag {
     display: inline-block;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -1427,6 +1425,8 @@ const maxStock = hasInventory ? product.stock! : undefined;
     letter-spacing: -0.03em;
     color: #ffffff;
     margin: 0 0 0.85rem;
+    max-width: 100%;
+    overflow-wrap: anywhere;
     word-break: break-word;
   }
 
@@ -1435,12 +1435,16 @@ const maxStock = hasInventory ? product.stock! : undefined;
     line-height: 1.65;
     color: #aca6cb;
     margin: 0 0 1.25rem;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .prod-price-hero {
     display: inline-flex;
     flex-direction: column;
     gap: 0.15rem;
+    max-width: 100%;
     background: rgba(148, 133, 237, 0.09);
     padding: 0.75rem 1.1rem;
     border-radius: 0.85rem;
@@ -1462,6 +1466,7 @@ const maxStock = hasInventory ? product.stock! : undefined;
     color: var(--color-accent, #9485ed);
     letter-spacing: -0.02em;
     line-height: 1.1;
+    overflow-wrap: anywhere;
   }
 
   /* FORM SECTIONS */
@@ -1469,18 +1474,24 @@ const maxStock = hasInventory ? product.stock! : undefined;
     display: flex;
     flex-direction: column;
     gap: 2rem;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .prod-section {
     display: flex;
     flex-direction: column;
     gap: 0.9rem;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .prod-section__heading {
     display: flex;
     flex-direction: column;
     gap: 0.2rem;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .prod-section__title {
@@ -1489,11 +1500,15 @@ const maxStock = hasInventory ? product.stock! : undefined;
     font-weight: 700;
     color: #ffffff;
     letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .prod-section__hint {
     font-size: 0.8125rem;
     color: #aca6cb;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .prod-section__stock-tag {
@@ -1608,12 +1623,16 @@ const maxStock = hasInventory ? product.stock! : undefined;
     border: 1px solid rgba(148, 133, 237, 0.2);
     border-radius: 1rem;
     padding: 1rem 1.1rem;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .prod-mod-group__header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
     margin-bottom: 0.85rem;
   }
 
@@ -1621,6 +1640,9 @@ const maxStock = hasInventory ? product.stock! : undefined;
     font-size: 0.875rem;
     font-weight: 700;
     color: #ffffff;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .prod-mod-group__badge {
@@ -1631,17 +1653,21 @@ const maxStock = hasInventory ? product.stock! : undefined;
     border: 1px solid rgba(148, 133, 237, 0.22);
     border-radius: 9999px;
     color: #c4baf8;
+    flex-shrink: 0;
   }
 
   .prod-mod-chips {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .prod-mod-chip {
     cursor: pointer;
     user-select: none;
+    max-width: 100%;
   }
 
   .prod-mod-chip__input {
@@ -1656,6 +1682,7 @@ const maxStock = hasInventory ? product.stock! : undefined;
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
+    max-width: 100%;
     padding: 0.55rem 0.95rem;
     background: #1a1138;
     border: 1.5px solid rgba(148, 133, 237, 0.22);
@@ -1664,6 +1691,12 @@ const maxStock = hasInventory ? product.stock! : undefined;
     font-weight: 600;
     color: #f1f0f8;
     transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .prod-mod-chip__text {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .prod-mod-chip:hover .prod-mod-chip__box {
@@ -1677,6 +1710,7 @@ const maxStock = hasInventory ? product.stock! : undefined;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
     width: 1rem;
     height: 1rem;
     border-radius: 9999px;
@@ -1704,19 +1738,21 @@ const maxStock = hasInventory ? product.stock! : undefined;
   /* ADICIONALES (EXTRAS) */
   .prod-extras-grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.65rem;
   }
 
   @media (min-width: 580px) {
     .prod-extras-grid {
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
   .prod-extra-item {
     cursor: pointer;
     user-select: none;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .prod-extra-item__input {
@@ -1732,6 +1768,8 @@ const maxStock = hasInventory ? product.stock! : undefined;
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
+    min-width: 0;
+    max-width: 100%;
     padding: 0.75rem 0.95rem;
     background: #1a1138;
     border: 1.5px solid rgba(148, 133, 237, 0.22);
@@ -1748,6 +1786,7 @@ const maxStock = hasInventory ? product.stock! : undefined;
   .prod-extra-item__check-wrap {
     display: flex;
     align-items: center;
+    flex-shrink: 0;
   }
 
   .prod-extra-item__checkbox {
@@ -1769,16 +1808,20 @@ const maxStock = hasInventory ? product.stock! : undefined;
   }
 
   .prod-extra-item__name {
-    display: block;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
     font-size: 0.875rem;
     font-weight: 600;
+    line-height: 1.3;
     color: #ffffff;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .prod-extra-item__price {
+    flex-shrink: 0;
     font-size: 0.8125rem;
     font-weight: 700;
     color: var(--color-accent, #9485ed);
@@ -1826,6 +1869,8 @@ const maxStock = hasInventory ? product.stock! : undefined;
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
+    min-width: 0;
+    max-width: 100%;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   }
 
@@ -1833,12 +1878,16 @@ const maxStock = hasInventory ? product.stock! : undefined;
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .prod-checkout-row {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 
   .prod-checkout-label {
@@ -1853,11 +1902,15 @@ const maxStock = hasInventory ? product.stock! : undefined;
     font-weight: 800;
     color: var(--color-accent, #9485ed);
     letter-spacing: -0.02em;
+    overflow-wrap: anywhere;
   }
 
   .prod-checkout-subtext {
     font-size: 0.8125rem;
+    line-height: 1.4;
     color: #aca6cb;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   /* CTA SUBMIT BUTTON */
@@ -1865,15 +1918,20 @@ const maxStock = hasInventory ? product.stock! : undefined;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .prod-submit-btn {
     width: 100%;
+    max-width: 100%;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.65rem;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.65rem;
     padding: 1rem 1.5rem;
+    text-align: center;
     background: linear-gradient(135deg, #8472ed 0%, #6d59db 100%);
     color: #ffffff;
     border: none;
@@ -1931,6 +1989,8 @@ const maxStock = hasInventory ? product.stock! : undefined;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-wrap: wrap;
+    text-align: center;
     gap: 0.6rem;
     padding: 0.75rem 1rem;
     border-radius: 0.75rem;
@@ -1939,6 +1999,7 @@ const maxStock = hasInventory ? product.stock! : undefined;
     color: #34d399;
     font-size: 0.875rem;
     font-weight: 700;
+    overflow-wrap: anywhere;
     animation: prodToastIn 0.3s ease;
   }
 

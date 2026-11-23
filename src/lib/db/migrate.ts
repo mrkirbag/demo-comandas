@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 
 import { createClient, type Client } from '@libsql/client';
 
+import { slugify } from '@/lib/utils/slug';
+
 async function columnExists(
   db: Client,
   table: string,
@@ -547,6 +549,39 @@ export async function runMigrations(dbClient?: Client): Promise<void> {
   if (!(await columnExists(db, 'products', 'description'))) {
     await db.execute('ALTER TABLE products ADD COLUMN description TEXT');
     console.log('✓ products.description');
+  }
+
+  if (!(await columnExists(db, 'products', 'slug'))) {
+    await db.execute('ALTER TABLE products ADD COLUMN slug TEXT');
+    console.log('✓ products.slug');
+  }
+
+  await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_products_slug ON products(slug)');
+
+  const missingSlugs = await db.execute(
+    `SELECT id, name FROM products WHERE slug IS NULL OR TRIM(slug) = ''`,
+  );
+  if (missingSlugs.rows.length > 0) {
+    const existingRows = await db.execute(
+      `SELECT slug FROM products WHERE slug IS NOT NULL AND TRIM(slug) != ''`,
+    );
+    const usedSlugs = new Set(existingRows.rows.map((r) => String(r.slug)));
+
+    for (const row of missingSlugs.rows) {
+      const base = slugify(String(row.name ?? 'producto'));
+      let candidate = base;
+      let counter = 2;
+      while (usedSlugs.has(candidate)) {
+        candidate = `${base}-${counter}`;
+        counter++;
+      }
+      usedSlugs.add(candidate);
+      await db.execute({
+        sql: 'UPDATE products SET slug = ? WHERE id = ?',
+        args: [candidate, String(row.id)],
+      });
+    }
+    console.log(`✓ products.slug backfill (${missingSlugs.rows.length})`);
   }
 
   console.log('Migraciones completadas.');

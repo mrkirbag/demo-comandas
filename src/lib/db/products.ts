@@ -1,5 +1,6 @@
 import { isValidMenuCategory } from '@/data/product-categories';
 import { createId } from '@/lib/utils/id';
+import { slugify } from '@/lib/utils/slug';
 
 import { db } from './client';
 import { getInventoryItemById } from './inventory';
@@ -10,6 +11,7 @@ import type { Product } from './types';
 export type CatalogProduct = {
   id: string;
   name: string;
+  slug: string | null;
   price: number;
   category: string;
   image_url: string | null;
@@ -25,6 +27,7 @@ export type CatalogProduct = {
 const CATALOG_COLUMNS = `
   p.id,
   p.name,
+  p.slug,
   p.price,
   p.category,
   p.image_url,
@@ -57,6 +60,7 @@ function mapProduct(row: Record<string, unknown>): CatalogProduct {
   return {
     id: String(row.id),
     name: String(row.name),
+    slug: row.slug ? String(row.slug) : null,
     price: Number(row.price),
     category: String(row.category),
     image_url: row.image_url ? String(row.image_url) : null,
@@ -85,6 +89,7 @@ function mapMenuProduct(row: Record<string, unknown>): Product {
   return {
     id: String(row.id),
     name: String(row.name),
+    slug: row.slug ? String(row.slug) : null,
     price: Number(row.price),
     category: String(row.category),
     image_url: row.image_url ? String(row.image_url) : null,
@@ -219,6 +224,25 @@ type CreateCatalogProductInput = {
   inventory_units_per_sale?: number;
 };
 
+async function generateUniqueProductSlug(name: string, excludeId?: string): Promise<string> {
+  const base = slugify(name);
+  const result = await db.execute({
+    sql: excludeId
+      ? 'SELECT slug FROM products WHERE (slug = ? OR slug LIKE ?) AND id != ?'
+      : 'SELECT slug FROM products WHERE slug = ? OR slug LIKE ?',
+    args: excludeId ? [base, `${base}-%`, excludeId] : [base, `${base}-%`],
+  });
+
+  const used = new Set(result.rows.map((r) => String(r.slug)));
+  if (!used.has(base)) return base;
+
+  let counter = 2;
+  while (used.has(`${base}-${counter}`)) {
+    counter++;
+  }
+  return `${base}-${counter}`;
+}
+
 export async function createCatalogProduct(
   input: CreateCatalogProductInput,
 ): Promise<CatalogProduct> {
@@ -229,18 +253,20 @@ export async function createCatalogProduct(
   );
 
   const id = createId();
+  const slug = await generateUniqueProductSlug(input.name);
 
   await db.execute({
     sql: `
       INSERT INTO products (
-        id, name, price, category, image_url, description, requires_inventory, active,
+        id, name, slug, price, category, image_url, description, requires_inventory, active,
         inventory_product_id, inventory_units_per_sale
       )
-      VALUES (?, ?, ?, ?, ?, ?, 0, 1, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?)
     `,
     args: [
       id,
       input.name,
+      slug,
       input.price,
       input.category,
       input.image_url ?? null,
@@ -280,6 +306,13 @@ export async function updateCatalogProduct(
   if (input.name !== undefined) {
     fields.push('name = ?');
     args.push(input.name);
+    const nextSlug = await generateUniqueProductSlug(input.name, id);
+    fields.push('slug = ?');
+    args.push(nextSlug);
+  } else if (!current.slug) {
+    const nextSlug = await generateUniqueProductSlug(current.name, id);
+    fields.push('slug = ?');
+    args.push(nextSlug);
   }
 
   if (input.price !== undefined) {
@@ -373,7 +406,7 @@ export async function getActiveMenuProductsByIds(ids: string[]): Promise<Product
 
   const placeholders = uniqueIds.map(() => '?').join(', ');
   const result = await db.execute({
-    sql: `SELECT p.id, p.name, p.price, p.category, p.image_url, p.description, p.requires_inventory, p.active,
+    sql: `SELECT p.id, p.name, p.slug, p.price, p.category, p.image_url, p.description, p.requires_inventory, p.active,
                  p.inventory_product_id, p.inventory_units_per_sale,
                  inv.stock AS inventory_stock
           FROM products p
@@ -388,7 +421,7 @@ export async function getActiveMenuProductsByIds(ids: string[]): Promise<Product
 /** Producto activo del menú por ID (para comandas). */
 export async function getActiveMenuProductById(id: string): Promise<Product | null> {
   const result = await db.execute({
-    sql: `SELECT p.id, p.name, p.price, p.category, p.image_url, p.description, p.requires_inventory, p.active,
+    sql: `SELECT p.id, p.name, p.slug, p.price, p.category, p.image_url, p.description, p.requires_inventory, p.active,
                  p.inventory_product_id, p.inventory_units_per_sale,
                  inv.stock AS inventory_stock
           FROM products p
@@ -402,10 +435,27 @@ export async function getActiveMenuProductById(id: string): Promise<Product | nu
   return mapMenuProduct(result.rows[0] as Record<string, unknown>);
 }
 
+/** Producto activo del menú por slug o ID (para URLs públicas). */
+export async function getActiveMenuProductBySlugOrId(slugOrId: string): Promise<Product | null> {
+  const result = await db.execute({
+    sql: `SELECT p.id, p.name, p.slug, p.price, p.category, p.image_url, p.description, p.requires_inventory, p.active,
+                 p.inventory_product_id, p.inventory_units_per_sale,
+                 inv.stock AS inventory_stock
+          FROM products p
+          LEFT JOIN inventory inv ON inv.product_id = COALESCE(p.inventory_product_id, CASE WHEN p.requires_inventory = 1 THEN p.id ELSE NULL END)
+          WHERE (p.slug = ? OR p.id = ?) AND p.requires_inventory = 0 AND p.active = 1
+          LIMIT 1`,
+    args: [slugOrId, slugOrId],
+  });
+
+  if (result.rows.length === 0) return null;
+  return mapMenuProduct(result.rows[0] as Record<string, unknown>);
+}
+
 /** Productos activos del menú para comandas. */
 export async function listActiveMenuProducts(): Promise<Product[]> {
   const result = await db.execute({
-    sql: `SELECT p.id, p.name, p.price, p.category, p.image_url, p.description, p.requires_inventory, p.active,
+    sql: `SELECT p.id, p.name, p.slug, p.price, p.category, p.image_url, p.description, p.requires_inventory, p.active,
                  p.inventory_product_id, p.inventory_units_per_sale,
                  inv.stock AS inventory_stock
           FROM products p
